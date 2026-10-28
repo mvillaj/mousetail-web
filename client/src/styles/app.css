@@ -1689,9 +1689,13 @@ input[type='range'] {
   accent-color: var(--action);
 }
 
+/* The light track is an ink wash rather than --surface-2, which matched the page
+   ground almost exactly and left the control with no visible edge off a card. A
+   wash darkens whatever it sits on, so it reads on the ground and on a card. */
 .segmented {
   display: inline-flex;
-  background: var(--surface-2);
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--text) 6%, transparent);
   border-radius: 999px;
   padding: 4px;
   gap: 2px;
@@ -1725,7 +1729,13 @@ input[type='range'] {
 .segmented button.on {
   background: var(--surface);
   color: var(--text);
-  box-shadow: var(--shadow-chip);
+  box-shadow:
+    0 0 0 1px var(--border-strong),
+    var(--shadow-chip);
+}
+:root[data-theme='dark'] .segmented {
+  background: var(--surface-2);
+  box-shadow: none;
 }
 :root[data-theme='dark'] .segmented button.on {
   background: var(--border-strong);
