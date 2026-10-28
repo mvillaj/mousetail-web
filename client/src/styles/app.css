@@ -571,67 +571,51 @@ h3 {
 .brand-lockup {
   display: inline-flex;
   align-items: center;
-  gap: 0.32em;
   font-size: 1.7rem;
   color: var(--text);
 }
-.brand-glass {
-  width: 0.92em;
-  height: 1.1em;
-  flex: none;
-}
-/* The hero pull, played once: the stream pours in from the spout, then the
-   crema rises with a little overshoot. */
-.brand-pour .brand-stream {
-  transform-box: fill-box;
-  transform-origin: top;
-  animation: brand-pour 0.7s cubic-bezier(0.3, 0.7, 0.2, 1) both;
-}
-.brand-pour .brand-crema {
-  transform-box: fill-box;
-  transform-origin: bottom;
-  animation: brand-crema 0.5s 0.55s cubic-bezier(0.3, 1.4, 0.5, 1) both;
-}
-@keyframes brand-pour {
-  from {
-    transform: scaleY(0);
-  }
-}
-@keyframes brand-crema {
-  from {
-    transform: scaleY(0.15);
-  }
-}
-/* The wordmark is the one place Fraunces appears: soft and wonky at full
-   optical size, so it reads as a logo next to the Bricolage headings. Its i is
-   a dotless glyph with the stream's drop in the action colour standing in. */
 .brand-name {
-  font-family: 'Fraunces', Georgia, serif;
-  font-weight: 700;
+  margin: 0;
   font-size: 1em;
   line-height: 1;
-  letter-spacing: -0.025em;
-  margin: 0;
-  white-space: nowrap;
-  font-variation-settings:
-    'opsz' 144,
-    'SOFT' 100,
-    'WONK' 1;
 }
-.brand-i {
-  position: relative;
-  display: inline-block;
+/* The drawn wordmark, sized by its height so every context scales it with
+   font-size like the type it replaced. */
+.brand-mark {
+  display: block;
+  width: 6.18em;
+  height: 1.4em;
 }
-.brand-i::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: -0.02em;
-  width: 0.15em;
-  height: 0.2em;
-  transform: translateX(-50%);
-  background: var(--action);
-  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+.brand-word {
+  fill: currentColor;
+}
+/* Always the house orange, whatever the finish: the action colour would sink
+   into the ink on Sesame and Black. */
+.brand-drop {
+  fill: #d9622b;
+}
+/* The hero pull, played once: the word writes itself in from the left, then
+   the drop falls from the tail with a little overshoot. */
+.brand-pour .brand-word {
+  animation: brand-write 0.9s cubic-bezier(0.45, 0, 0.2, 1) both;
+}
+.brand-pour .brand-drop {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: brand-drop 0.45s 0.8s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+@keyframes brand-write {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes brand-drop {
+  from {
+    transform: scale(0.3, 0);
+  }
 }
 .sr-only {
   position: absolute;
@@ -2683,8 +2667,8 @@ button.list-item {
     opacity: 0.6;
   }
   .coach-glass .liquid-group,
-  .brand-pour .brand-stream,
-  .brand-pour .brand-crema,
+  .brand-pour .brand-word,
+  .brand-pour .brand-drop,
   .modal,
   .overlay,
   .sheet,

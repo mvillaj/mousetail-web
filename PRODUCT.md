@@ -49,7 +49,7 @@ Adjacent workflows: reading a bag (paste a roaster URL or bag copy to prefill th
 ## Brand Commitments
 
 - **Name:** Mousetail (formerly Crema; renamed because other espresso apps already use that name). Repo/product label "ES1 Brew Lab".
-- **Lockup:** a shot-profile bar motif (ramp, hold, decline) ruled above the wordmark, always as wide as the word (`client/src/components/BrandLockup.tsx`).
+- **Lockup:** lowercase "mousetail" in a drawn, joined script, its l sweeping out into a tail that ends in a drop of Crema orange (`client/src/components/BrandLockup.tsx`).
 - **Independence:** Mousetail is not affiliated with, endorsed by, or supported by Fellow Products. Nothing may imply otherwise, including use of Fellow branding.
 - **Voice:** plain, precise, and candid about uncertainty, as in the README: says what is inferred, what is measured, and what could break.
 

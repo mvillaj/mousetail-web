@@ -7,13 +7,7 @@
         "rule": "bounce-easing",
         "value": "cubic-bezier(0.3, 1.4, 0.5, 1)",
         "createdAt": "2026-10-12T00:11:31.385Z",
-        "reason": "user picked concept 4 'The pull', described to them as the crema rising with a small overshoot; plays once on the sign-in hero only and is off under reduced motion"
-      },
-      {
-        "rule": "overused-font",
-        "value": "fraunces",
-        "createdAt": "2026-10-12T00:11:31.401Z",
-        "reason": "user confirmed: asked to keep the current Fraunces wordmark font; it is used only for the logo wordmark"
+        "reason": "the wordmark's drop falls from the tail with a small overshoot (formerly the crema rising, concept 4 'The pull'); plays once on the sign-in hero only and is off under reduced motion"
       }
     ]
   }
