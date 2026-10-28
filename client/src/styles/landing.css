@@ -105,10 +105,10 @@
   padding: 0 var(--splash-inset);
 }
 .splash-copy h1 {
-  font-weight: 800;
+  font-weight: 600;
   font-size: clamp(2.6rem, 5.4vw, 4.4rem);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
+  line-height: 1;
+  letter-spacing: -0.02em;
   font-variation-settings: 'opsz' 96;
   max-width: 7.6em;
   text-wrap: balance;
@@ -173,10 +173,10 @@
 }
 .landing .intro-copy h2,
 .landing .stage-body h2 {
-  font-weight: 800;
+  font-weight: 600;
   font-size: clamp(1.9rem, 3.4vw, 2.75rem);
-  line-height: 1.04;
-  letter-spacing: -0.035em;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
   font-variation-settings: 'opsz' 72;
   text-wrap: balance;
 }
@@ -473,7 +473,7 @@
 
 .landing .card-head h3 {
   font-size: 1.12rem;
-  font-weight: 700;
+  font-weight: 600;
   font-variation-settings: 'opsz' 24;
 }
 
@@ -587,9 +587,9 @@
 .landing .close p {
   margin: 14px 0 0;
   font-family: var(--display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: clamp(1.25rem, 2.2vw, 1.6rem);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   font-variation-settings: 'opsz' 24;
   color: var(--text-dim);
 }

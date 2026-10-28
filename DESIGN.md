@@ -46,32 +46,32 @@ colors:
   stage-ramp: "#8f552d"
 typography:
   display:
-    fontFamily: "Bricolage Grotesque, Figtree, -apple-system, sans-serif"
+    fontFamily: "Fraunces, Georgia, serif"
     fontSize: "clamp(1.9rem, 3.2vw, 2.55rem)"
-    fontWeight: 800
-    lineHeight: 1.02
-    letterSpacing: "-0.035em"
+    fontWeight: 600
+    lineHeight: 1.04
+    letterSpacing: "-0.02em"
     fontVariation: "'opsz' 72"
   headline:
-    fontFamily: "Bricolage Grotesque, Figtree, -apple-system, sans-serif"
+    fontFamily: "Fraunces, Georgia, serif"
     fontSize: "2.15rem"
-    fontWeight: 700
+    fontWeight: 600
     lineHeight: 1.08
-    letterSpacing: "-0.03em"
+    letterSpacing: "-0.015em"
     fontVariation: "'opsz' 48"
   title:
-    fontFamily: "Bricolage Grotesque, Figtree, -apple-system, sans-serif"
+    fontFamily: "Fraunces, Georgia, serif"
     fontSize: "1.3rem"
-    fontWeight: 700
+    fontWeight: 600
     lineHeight: 1.2
-    letterSpacing: "-0.02em"
+    letterSpacing: "-0.01em"
     fontVariation: "'opsz' 24"
   title-sm:
-    fontFamily: "Bricolage Grotesque, Figtree, -apple-system, sans-serif"
+    fontFamily: "Fraunces, Georgia, serif"
     fontSize: "1.05rem"
-    fontWeight: 600
+    fontWeight: 500
     lineHeight: 1.3
-    letterSpacing: "-0.01em"
+    letterSpacing: "0"
     fontVariation: "'opsz' 14"
   body:
     fontFamily: "Figtree, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
@@ -94,18 +94,18 @@ typography:
     fontWeight: 400
     fontFeature: "tnum"
   landing-hero:
-    fontFamily: "Bricolage Grotesque, Figtree, -apple-system, sans-serif"
+    fontFamily: "Fraunces, Georgia, serif"
     fontSize: "clamp(2.5rem, 5.8vw, 4.6rem)"
-    fontWeight: 800
+    fontWeight: 600
     lineHeight: 1
-    letterSpacing: "-0.04em"
+    letterSpacing: "-0.02em"
     fontVariation: "'opsz' 96"
   landing-section:
-    fontFamily: "Bricolage Grotesque, Figtree, -apple-system, sans-serif"
+    fontFamily: "Fraunces, Georgia, serif"
     fontSize: "clamp(1.9rem, 3.4vw, 2.75rem)"
-    fontWeight: 800
-    lineHeight: 1.04
-    letterSpacing: "-0.035em"
+    fontWeight: 600
+    lineHeight: 1.06
+    letterSpacing: "-0.02em"
     fontVariation: "'opsz' 72"
 rounded:
   sm: "12px"
@@ -194,12 +194,12 @@ Mousetail is a warm, friendly consumer app for the espresso bench: soft cards on
 
 The signature is the shot glass. Every shot is drawn as a demitasse on one fixed 48 g scale, so glasses compare honestly side by side, and the crema band's colour is how the shot tasted: pale for sour, hazel for balanced, dark for bitter. The glass recurs in the coach card, the dial-in strip, recent-shot rows and empty states.
 
-Density is calm and generous: 20px card radii, pill buttons, 15px body, one instruction per screen set large in Bricolage. Light and dark are both first-class; light is the base. A first visit with no saved choice opens in light, on the landing and in the app alike; "Auto" follows the OS only once someone picks it. This world replaces the retired brown-on-brown "Bench Logbook". Colourway names describe the machine only; Mousetail carries no Fellow marks or UI.
+Density is calm and generous: 20px card radii, pill buttons, 15px body, one instruction per screen set large in Fraunces. Light and dark are both first-class; light is the base. A first visit with no saved choice opens in light, on the landing and in the app alike; "Auto" follows the OS only once someone picks it. This world replaces the retired brown-on-brown "Bench Logbook". Colourway names describe the machine only; Mousetail carries no Fellow marks or UI.
 
 **Key Characteristics:**
 - The selected finish's body colour is the action colour and fills exactly one surface (the coach card).
 - The ground takes a faint cast of the machine; cards sit on it with soft offset shadows (light) or a hairline border (dark).
-- Bricolage Grotesque headings, Figtree UI, Red Hat Mono for figures only.
+- Fraunces headings, Figtree UI, Red Hat Mono for figures only.
 - Every shot is a demitasse: height is yield on a fixed scale, crema colour is taste.
 - Tamp-feel press on every button: a small give and settle, never a bounce.
 - Drawn Lucide line icons throughout.
@@ -242,28 +242,28 @@ A warm neutral ground and ink, one finish-driven action colour, and a fixed set 
 
 ## Typography
 
-**Display Font:** Bricolage Grotesque (optical size 12 to 96, weights 500 to 800), with Figtree fallback
+**Display Font:** Fraunces (optical size 9 to 144, weights 400 to 700, Soft axis fixed at 100), with Georgia fallback
 **Body Font:** Figtree (400 to 700), with the system sans stack
 **Label/Mono Font:** Red Hat Mono (400 to 600), with ui-monospace
 
-**Character:** Bricolage's optical sizes give headings a friendly, slightly quirky voice at large sizes and clean shapes at small ones; Figtree keeps the UI round and plain. Red Hat Mono was chosen for readings because it stays legible at small sizes without reading as a typewriter.
+**Character:** Fraunces is a soft serif: its rounded corners echo the round ends of the monoline wordmark, and the serif gives headings a warm, café-menu voice that sits beside the script rather than imitating it. Figtree keeps the UI round and plain. Red Hat Mono was chosen for readings because it stays legible at small sizes without reading as a typewriter.
 
 ### Hierarchy
-- **Display** (800, clamp(1.9rem, 3.2vw, 2.55rem), 1.02, opsz 72): the coach's one barista instruction ("Grind 2 steps finer"). 1.75rem on phones.
-- **Headline** (700, 2.15rem, 1.08, opsz 48): page titles (h1). 1.75rem on phones.
-- **Title** (700, 1.3rem, 1.2, opsz 24): card and section heads (h2). 1.18rem on phones.
-- **Title small** (600, 1.05rem, 1.3, opsz 14): h3, empty-state heads.
+- **Display** (600, clamp(1.9rem, 3.2vw, 2.55rem), 1.04, opsz 72): the coach's one barista instruction ("Grind 2 steps finer"). 1.75rem on phones.
+- **Headline** (600, 2.15rem, 1.08, opsz 48): page titles (h1). 1.75rem on phones.
+- **Title** (600, 1.3rem, 1.2, opsz 24): card and section heads (h2). 1.18rem on phones.
+- **Title small** (500, 1.05rem, 1.3, opsz 14): h3, empty-state heads.
 - **Body** (400, 15px, 1.55): all UI prose. Page intros cap at 62ch, coach reasons at 46ch, changelog at 72ch.
 - **Label** (600, 0.76 to 0.88rem): field labels, nav group labels, stat labels, table heads. Sentence case, no tracking, no uppercase.
 - **Figure** (Red Hat Mono 400 to 500, tabular numerals): stat values (1.6rem), dial-in times (0.88rem), table numbers, number inputs, summary totals, chart labels, signed deltas.
 - **Wordmark**: not a typeface. Lowercase "mousetail" is drawn as an SVG (see Brand Lockup), so no font is loaded for it; never imitate it with a script face in headings or UI.
-- **Landing hero** (800, clamp(2.5rem, 5.8vw, 4.6rem), 1, -0.04em, opsz 96): the public landing's h1 only.
-- **Landing section** (800, clamp(1.9rem, 3.4vw, 2.75rem), 1.04, -0.035em, opsz 72): the landing's section h2s.
+- **Landing hero** (600, clamp(2.6rem, 5.4vw, 4.4rem), 1, -0.02em, opsz 96): the public landing's h1 only.
+- **Landing section** (600, clamp(1.9rem, 3.4vw, 2.75rem), 1.06, -0.02em, opsz 72): the landing's section h2s.
 
 ### Named Rules
 **The Figures-Only Mono Rule.** Red Hat Mono sets numbers and only numbers. Units and words beside a figure ("g", "s", "Leaning sour") are Figtree. A signed delta is a mono figure (with a true minus, `−`) followed by its unit in prose.
 
-**The Optical Size Rule.** Every Bricolage use sets `font-variation-settings: 'opsz'` to match its size (14, 24, 48, 72, and 96 for the landing hero). Do not let headings default to one optical size.
+**The Optical Size Rule.** Every Fraunces use sets `font-variation-settings: 'opsz'` to match its size (14, 24, 48, 72, and 96 for the landing hero). Do not let headings default to one optical size.
 
 **The Barista Voice Rule.** Headlines are instructions you could say across the counter: "Grind 2 steps finer", "Let it run to 1:2.4", "Keep this grind". Confidence is said in words ("Fairly sure"), never as a percentage.
 
@@ -361,7 +361,7 @@ The public front page opens on a photograph and then becomes one shot pulled acr
 - **Readout card:** floats over the plot, following the playhead and clamped so it never hangs off either end. Surface fill, 14px radius and the pop shadow (plus a `border-strong` outline in dark), like the popover. It holds a Shot Glass that fills to the shot's 36 g as it pours (liquid scaleY from the bottom, paced by cumulative pressure) beside live mono figures (bar, s, and the stage's flow limit labelled "ml/s max") and the current stage with its colour dot; at the end it reads "36 g out, balanced". On phones the glass drops to 32px and the flow figure hides.
 - **Stage labels:** hung below the baseline at each band's start (the last right-aligned to the edge), 0.86rem 600 with a stage-colour dot and the band's seconds in faint mono beneath. Each links to its section; hover gives a surface pill and an underline.
 - **Gutter curve slices:** each story section is a 200px gutter beside the body, and the gutter carries a sticky (top 32px) 220 by 72 copy of the same eased curve: dashed at rest, with only that section's stage lit in its stage colour and area, labelled with its name and seconds. At 860px and below the section becomes one column: the h2 and lead come first, then the slice (150px, 120px on phones) beside its label, leading the demos.
-- **Closing glass:** the last section's gutter swaps the slice for the 36 g Shot Glass at 84px (56px at 860px and below), labelled "End of shot", "36 g out": the shot has poured. The close below centres a large lockup (clamp(3.2rem, 8vw, 5rem)), one Bricolage 700 line in dim ink (opsz 24), and the CTAs again.
+- **Closing glass:** the last section's gutter swaps the slice for the 36 g Shot Glass at 84px (56px at 860px and below), labelled "End of shot", "36 g out": the shot has poured. The close below centres a large lockup (clamp(3.2rem, 8vw, 5rem)), one Fraunces 600 line in dim ink (opsz 24), and the CTAs again.
 - **Reuse:** one demo per section, each the dashboard's own component on sample inputs: the Dial-in Strip (alone, max 520px), the Coach Card (inverted primary, beside a "Your last shot" input card), and the Profile Chart beside three short facts. CTAs are Create account (large primary) and Sign in (large secondary; a ghost pill in the top bar).
 
 ### Compatibility aliases
