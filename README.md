@@ -6,9 +6,9 @@
 
 An espresso logbook and profile studio for the **Fellow Espresso Series 1**.
 
-**Live:** [es1-brew-lab.fly.dev](https://es1-brew-lab.fly.dev)
+**Live:** [mousetail.app](https://mousetail.app)
 
-![Mousetail landing page: "Dial in espresso on your ES1, one change at a time," above a live pressure-profile chart](docs/images/landing.png)
+![Mousetail landing page: "Bitter? Sour? Chase the mouse tail." over a full-screen photo of an espresso pour](docs/images/landing.jpg)
 
 Track every shot with the setting that produced it, compare grind sizes across
 grinders that don't agree on what a number means, keep a shared library of
