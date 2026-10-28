@@ -93,13 +93,6 @@ typography:
     fontSize: "0.88rem"
     fontWeight: 400
     fontFeature: "tnum"
-  wordmark:
-    fontFamily: "Fraunces, Georgia, serif"
-    fontSize: "1.7rem"
-    fontWeight: 700
-    lineHeight: 1
-    letterSpacing: "-0.025em"
-    fontVariation: "'opsz' 144, 'SOFT' 100, 'WONK' 1"
   landing-hero:
     fontFamily: "Bricolage Grotesque, Figtree, -apple-system, sans-serif"
     fontSize: "clamp(2.5rem, 5.8vw, 4.6rem)"
@@ -199,7 +192,7 @@ components:
 
 Mousetail is a warm, friendly consumer app for the espresso bench: soft cards on a lightly wood-cast ground, plain barista language, and one bright colour that means "press me". By default that colour is Crema orange, the house finish, so the app stands on its own whatever machine you own. Anyone who wants it to match their ES1 can pick a finish instead (Sesame, Cherry Red, Marine Blue, Woodland, Malted Chocolate, Black), and the action colour, the one filled surface, and a faint cast in the page ground all follow it. Everything else (ink, status hues, the shot glass) stays put.
 
-The signature is the shot glass. Every shot is drawn as a demitasse on one fixed 48 g scale, so glasses compare honestly side by side, and the crema band's colour is how the shot tasted: pale for sour, hazel for balanced, dark for bitter. The glass recurs in the coach card, the dial-in strip, recent-shot rows, empty states and the brand mark.
+The signature is the shot glass. Every shot is drawn as a demitasse on one fixed 48 g scale, so glasses compare honestly side by side, and the crema band's colour is how the shot tasted: pale for sour, hazel for balanced, dark for bitter. The glass recurs in the coach card, the dial-in strip, recent-shot rows and empty states.
 
 Density is calm and generous: 20px card radii, pill buttons, 15px body, one instruction per screen set large in Bricolage. Light and dark are both first-class; light is the base. A first visit with no saved choice opens in light, on the landing and in the app alike; "Auto" follows the OS only once someone picks it. This world replaces the retired brown-on-brown "Bench Logbook". Colourway names describe the machine only; Mousetail carries no Fellow marks or UI.
 
@@ -263,7 +256,7 @@ A warm neutral ground and ink, one finish-driven action colour, and a fixed set 
 - **Body** (400, 15px, 1.55): all UI prose. Page intros cap at 62ch, coach reasons at 46ch, changelog at 72ch.
 - **Label** (600, 0.76 to 0.88rem): field labels, nav group labels, stat labels, table heads. Sentence case, no tracking, no uppercase.
 - **Figure** (Red Hat Mono 400 to 500, tabular numerals): stat values (1.6rem), dial-in times (0.88rem), table numbers, number inputs, summary totals, chart labels, signed deltas.
-- **Wordmark** (Fraunces 700, lowercase "mousetail", -0.025em, opsz 144, SOFT 100, WONK 1). The only use of Fraunces, loaded as a subset of the word's letters; never use it for headings or UI. The i is dotless, with a drop in the action colour for its dot; the plain word is kept for screen readers.
+- **Wordmark**: not a typeface. Lowercase "mousetail" is drawn as an SVG (see Brand Lockup), so no font is loaded for it; never imitate it with a script face in headings or UI.
 - **Landing hero** (800, clamp(2.5rem, 5.8vw, 4.6rem), 1, -0.04em, opsz 96): the public landing's h1 only.
 - **Landing section** (800, clamp(1.9rem, 3.4vw, 2.75rem), 1.04, -0.035em, opsz 72): the landing's section h2s.
 
@@ -304,7 +297,7 @@ A hybrid that changes by theme. In light, cards, stats and list items lift off t
 
 ## Shapes
 
-Generous and soft. Cards and list items round at 20px (18px on phones); the coach card, modals and the bottom sheet's top corners at 24px; stats, the settings popover at 14px; inputs, nav rows, banners and table-row hovers at 12px. Every button, tag, segmented control and the tab-log disc is a full pill or circle. The finish picker is a row of 24px circles split diagonally into body and wood. The demitasse silhouette (tapered cup, rounded base, loop handle) is the one recurring drawn shape and also forms the brand mark.
+Generous and soft. Cards and list items round at 20px (18px on phones); the coach card, modals and the bottom sheet's top corners at 24px; stats, the settings popover at 14px; inputs, nav rows, banners and table-row hovers at 12px. Every button, tag, segmented control and the tab-log disc is a full pill or circle. The finish picker is a row of 24px circles split diagonally into body and wood. The demitasse silhouette (tapered cup, rounded base, loop handle) is the one recurring drawn shape.
 
 ## Components
 
@@ -352,7 +345,7 @@ The one machine-coloured surface: `--body` fill, `--on-body` ink, 24px radius, 2
 This coffee's shots as a row of glasses, oldest left, on the shared scale. Each column shows its time in mono (good hue when on target), a signed delta in faint Figtree with mono figures, and reserves a 6px dot so glasses share a baseline; the latest shot's dot is the action colour. A legend of crema swatches closes the card.
 
 ### Brand Lockup
-A solid demitasse in current ink with a fixed balanced-hazel crema band (never the finish colour, which would vanish on Black), with a thin wavy stream (the "mouse tail" of a good pull) running into it in the action colour, beside lowercase "mousetail" in the soft-serif wordmark style, whose i is dotted with a drop of the same colour as the stream. The favicon is the same mark on a Crema orange tile: espresso glass, sesame crema, cream stream.
+Lowercase "mousetail" drawn as one joined monoline script in current ink, whose l runs on into a long sweeping tail (the "mouse tail") that curls over and ends in a drop. The drop and the curl it hangs from are always Crema orange `#d9622b`, never the action colour, which on Sesame and Black would sink into the ink. It is an SVG traced from the approved artwork and sized by height (1.4em), so it scales with font-size wherever it sits; the plain word is kept for screen readers. On the sign-in hero the word writes itself in from the left and the drop falls, once. The favicon is the extraction ring, not the wordmark: on an espresso tile (`#2E1B0F`), a cream ring (`#F9F1E6`) open on the right, a burnt-orange stream (`#C45A1E`) hugging the inside of it from a fine tail on the left to full weight at the top right, and a peach drop (`#E3A471`) sitting in the ring's opening. It is the supplied artwork (`client/public/favicon.svg`), used as drawn.
 
 ### Working Indicator
 Four 3px bars pulsing in currentColor like a shot being pulled, with an optional mono elapsed clock; static under reduced motion.

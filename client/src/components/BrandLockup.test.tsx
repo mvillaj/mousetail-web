@@ -3,17 +3,19 @@ import { describe, expect, it } from 'vitest';
 import BrandLockup from './BrandLockup';
 
 describe('BrandLockup', () => {
-  it('shows the wordmark beside a decorative mark', () => {
+  it('names the drawn wordmark in text and hides the drawing', () => {
     const { container } = render(<BrandLockup />);
     expect(screen.getByText('mousetail')).toBeInTheDocument();
     expect(screen.queryByRole('heading')).toBeNull();
     expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('hides the drawn word with its dotless i from assistive tech', () => {
+  it('draws the word and the drop as separate shapes', () => {
     const { container } = render(<BrandLockup />);
-    const drawn = container.querySelector('.brand-i')?.closest('[aria-hidden="true"]');
-    expect(drawn).toHaveTextContent('mousetaıl');
+    const svg = container.querySelector('svg.brand-mark');
+    expect(svg?.querySelector('.brand-word')).toHaveAttribute('fill-rule', 'evenodd');
+    // The drop sits under the word, so the tail's end overlaps it.
+    expect(svg?.firstElementChild).toHaveClass('brand-drop');
   });
 
   it('only plays the pour when asked', () => {

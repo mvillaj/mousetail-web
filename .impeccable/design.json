@@ -635,7 +635,7 @@
       },
       "wordmark": {
         "displayName": "Wordmark",
-        "purpose": "Lowercase \"mousetail\" in the brand lockup, in Fraunces (soft, wonky, opsz 144); the only use of that face. The i is dotless under a drop in the action colour."
+        "purpose": "Lowercase \"mousetail\" drawn as an SVG script, not set in a font; its l sweeps into a tail ending in a Crema orange drop."
       },
       "landing-hero": {
         "displayName": "Landing Hero",
