@@ -49,7 +49,12 @@ function buildAppearance() {
       cardBox: {
         border: `1px solid ${v('--border')}`,
         boxShadow: v('--shadow'),
+        background: v('--surface'),
       },
+      // Clerk lifts the form onto its own card inside the box, leaving the
+      // footer as a transparent tray where the page ground shows through. Flatten
+      // the inner card so the box reads as one surface.
+      card: { boxShadow: 'none' },
       // Clerk styles social buttons for a light card — a pale button with dark
       // label. Recolouring the card alone leaves dark text on a dark button, so
       // the label and icon have to be set explicitly. Matches .btn (app.css).
@@ -62,9 +67,17 @@ function buildAppearance() {
         color: v('--text'),
         fontWeight: '500',
       },
+      // "Last used" defaults to --surface on --surface with a near-invisible
+      // alpha border, so it vanishes into the card. Match .tag.accent (app.css).
+      lastAuthenticationStrategyBadge: {
+        background: v('--action-soft'),
+        border: `1px solid ${v('--action-line')}`,
+        color: v('--text'),
+        fontWeight: '600',
+      },
       // Clerk gives the footer its own subtle background, which shows up as a
-      // seam against --surface.
-      footer: { background: 'transparent' },
+      // seam against --surface. A hairline keeps "Secured by" apart from the form.
+      footer: { background: 'transparent', borderTop: `1px solid ${v('--border')}` },
       // "Don't have an account? Sign up" links to Clerk's hosted
       // <instance>.accounts.dev page, which walks the user out of the app. The
       // segmented control above already switches between the two, so this is
