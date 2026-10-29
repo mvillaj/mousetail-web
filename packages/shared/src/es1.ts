@@ -30,7 +30,11 @@ export const ES1_LIMITS = {
   /** Pre-infusion runs far longer than an infusion step. Confirmed from the app UI. */
   preInfusion: {
     durationS: { min: 1, max: 120, step: 1 },
-    holdPressureBar: { min: 1, max: 9, step: 0.1 },
+    /**
+     * Whole bar only. Confirmed by a refused push, 2026-10-29: Fellow answered
+     * 400 "preInfusionHoldPressure must be an integer number" to 2.5.
+     */
+    holdPressureBar: { min: 1, max: 9, step: 1 },
     fillFlowMlS: { min: 1, max: 6.5, step: 0.1 },
   },
 } as const;
@@ -41,7 +45,7 @@ export const RANGE_NOTES: Record<string, string> = {
     'Captured infusion and pre-infusion pressures span 3-9 bar; the app caps pre-infusion at 1-9.',
   stageDurationS: 'Not published. Longest captured infusion step is 30 s.',
   doseG: 'Not published. Every captured profile uses an 18 g dose.',
-  preInfusion: 'Confirmed from the app UI: 1-120 s, 1-9 bar, 1-6.5 ml/s in 0.1 steps.',
+  preInfusion: 'Confirmed from the app UI: 1-120 s, 1-9 bar in whole bar, 1-6.5 ml/s in 0.1 steps.',
   grindSize:
     'Unknown scale. Captured values run 0 to 2 in tenths; every factory profile is 0, which suggests a relative offset rather than an absolute setting.',
 };

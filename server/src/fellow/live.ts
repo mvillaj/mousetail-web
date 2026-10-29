@@ -237,7 +237,9 @@ export function toEs1Payload(
     // and the server fills in 3 bar / 4.5 ml/s / 5 s, which would quietly
     // overwrite what the user configured before switching it off.
     preInfusionEnabled: Boolean(preInfusion),
-    preInfusionHoldPressure: preInfusion?.pressureBar ?? 3,
+    // Whole bar: Fellow refuses a fraction. A profile saved before the editor
+    // enforced that still goes, rounded, and describePayloadLoss says so.
+    preInfusionHoldPressure: preInfusion ? Math.round(preInfusion.pressureBar) : 3,
     preInfusionFillFlowRate: preInfusion?.flowLimitMlS ?? 4.5,
     preInfusionDuration: preInfusion?.durationS ?? 5,
     infusion,
@@ -371,6 +373,11 @@ export function describePayloadLoss(profile: Es1Profile): string[] {
   }
 
   const pi = profile.stages.find((s) => s.kind === 'preinfusion');
+  if (pi && !Number.isInteger(pi.pressureBar)) {
+    loss.push(
+      `Pre-infusion holds ${pi.pressureBar} bar; the machine takes whole bar, so ${Math.round(pi.pressureBar)} is sent.`,
+    );
+  }
   if (pi && (pi.durationS < 1 || pi.durationS > 120)) {
     loss.push(`Pre-infusion is ${pi.durationS}s; the machine accepts 1-120s.`);
   }

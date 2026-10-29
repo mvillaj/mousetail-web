@@ -109,6 +109,13 @@ export const es1StageSchema = z
             : `A stage runs ${bound.min}-${bound.max}s`,
       });
     }
+    if (stage.kind === 'preinfusion' && !Number.isInteger(stage.pressureBar)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['pressureBar'],
+        message: 'Pre-infusion holds a whole number of bar; the ES1 refuses a fraction',
+      });
+    }
   });
 
 export const es1ProfileSchema = z

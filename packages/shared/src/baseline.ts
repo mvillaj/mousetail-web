@@ -49,6 +49,7 @@ interface RoastRule {
   ratio: number;
   /** Pre-infusion seconds at `preBar`; 0 for none. */
   preS: number;
+  /** Whole bar: Fellow refuses a fractional pre-infusion hold. */
   preBar: number;
   /** Flat infusion steps, in order, as [seconds, bar]. */
   steps: [number, number][];
@@ -89,7 +90,8 @@ const ROAST: Record<RoastLevel, RoastRule> = {
     tempF: 196,
     ratio: 2.0,
     preS: 6,
-    preBar: 2.5,
+    // Was 2.5, which Fellow refuses. 2 keeps it gentler than medium's 3.
+    preBar: 2,
     steps: [
       [12, 8.5],
       [10, 7],
