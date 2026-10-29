@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { mock } from 'node:test';
 import {
   describePayloadLoss,
   fromEs1Wire,
   isEditable,
+  liveFellowClient,
   preservedFrom,
   profileOrigin,
   toEs1Payload,
@@ -193,4 +194,67 @@ test('preserved wire fields survive a round-trip instead of reverting', () => {
 test('a preserved original never overrides the folder we write into', () => {
   const kept = toEs1Payload(fromEs1Wire(LEVER), preservedFrom(LEVER));
   assert.equal(kept.folder, 'custom', 'a factory original must not drag its folder along');
+});
+
+/** Fellow's answer to a payload it will not take: NestJS validation, as on login. */
+const REJECTED = {
+  message: ['temperature must not be greater than 94', 'title must be shorter than 30 characters'],
+  error: 'Bad Request',
+  statusCode: 400,
+};
+const SESSION = { email: 'me@example.com', accessToken: 'tok' };
+
+function fellowAnswers(status: number, body: unknown) {
+  return mock.method(
+    globalThis,
+    'fetch',
+    async () => new Response(JSON.stringify(body), { status }),
+  );
+}
+
+test("a rejected push carries Fellow's own reasons and its raw answer", async (t) => {
+  const fetch = fellowAnswers(400, REJECTED);
+  t.after(() => fetch.mock.restore());
+
+  const result = await liveFellowClient.pushProfile(SESSION, 'FS_1', fromEs1Wire(CUSTOM));
+  assert.equal(result.ok, false);
+  assert.equal(
+    result.message,
+    'Fellow rejected the profile (400): temperature must not be greater than 94; title must be shorter than 30 characters',
+  );
+  assert.deepEqual(result.raw, REJECTED);
+});
+
+test('a rejected update is explained the same way as a rejected push', async (t) => {
+  const fetch = fellowAnswers(400, REJECTED);
+  t.after(() => fetch.mock.restore());
+
+  const result = await liveFellowClient.updateProfile(
+    SESSION,
+    'FS_1',
+    CUSTOM.id,
+    fromEs1Wire(CUSTOM),
+  );
+  assert.equal(result.ok, false);
+  assert.match(result.message, /^Fellow rejected the profile \(400\): temperature must not/);
+  assert.deepEqual(result.raw, REJECTED);
+});
+
+test('a Fellow that cannot be reached is not reported as a rejection', async (t) => {
+  const fetch = mock.method(globalThis, 'fetch', async () => {
+    throw new TypeError('fetch failed');
+  });
+  t.after(() => fetch.mock.restore());
+
+  const result = await liveFellowClient.pushProfile(SESSION, 'FS_1', fromEs1Wire(CUSTOM));
+  assert.equal(result.message, 'Could not reach Fellow: fetch failed');
+});
+
+test('every Fellow request is bounded in time', async (t) => {
+  const fetch = fellowAnswers(200, []);
+  t.after(() => fetch.mock.restore());
+
+  await liveFellowClient.listProfiles(SESSION, 'FS_1');
+  const init = fetch.mock.calls[0].arguments[1] as RequestInit;
+  assert.ok(init.signal instanceof AbortSignal);
 });

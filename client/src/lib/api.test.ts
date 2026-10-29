@@ -55,6 +55,22 @@ describe('api', () => {
     expect(err).toMatchObject({ status: 422, message: 'Dose must be positive' });
   });
 
+  it('keeps the whole error body on the ApiError', async () => {
+    mockFetch(respond(424, { error: 'Fellow said no', raw: { statusCode: 400 } }));
+    const err = await api('/fellow/push/p1', { method: 'POST', body: {} }).catch((e) => e);
+    expect(err).toMatchObject({ body: { error: 'Fellow said no', raw: { statusCode: 400 } } });
+  });
+
+  it('turns an HTML error page from a proxy into a sentence, not a JSON parse error', async () => {
+    mockFetch(new Response('<!DOCTYPE html><title>502 Bad Gateway</title>', { status: 502 }));
+    const err = await api('/fellow/push/p1').catch((e) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err).toMatchObject({
+      status: 502,
+      message: 'The server sent back a page instead of an answer (502). Try again in a moment.',
+    });
+  });
+
   it('falls back to a generic message when the error body is empty', async () => {
     mockFetch(respond(500));
     await expect(api('/shots')).rejects.toThrow('Request failed (500)');

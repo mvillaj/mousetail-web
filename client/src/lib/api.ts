@@ -18,8 +18,24 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** The parsed error body, for callers that want more than `error`. */
+    public body: unknown = null,
   ) {
     super(message);
+  }
+}
+
+/**
+ * Something between us and the server (Cloudflare, Fly's proxy) can answer with
+ * an HTML error page. Parsing that raw gave the user `Unexpected token '<'`, so
+ * a body that is not JSON is kept as text and never thrown over.
+ */
+function parseBody(text: string): unknown {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
   }
 }
 
@@ -45,9 +61,21 @@ export async function api<T = unknown>(
     body: hasBody ? JSON.stringify(init.body) : undefined,
   });
   if (res.status === 204) return undefined as T;
-  const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!res.ok) throw new ApiError(res.status, data?.error ?? `Request failed (${res.status})`);
+  const data = parseBody(await res.text());
+  if (typeof data === 'string') {
+    throw new ApiError(
+      res.status,
+      `The server sent back a page instead of an answer (${res.status}). Try again in a moment.`,
+    );
+  }
+  const error = (data as { error?: unknown } | null)?.error;
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      typeof error === 'string' ? error : `Request failed (${res.status})`,
+      data,
+    );
+  }
   return data as T;
 }
 
