@@ -18,6 +18,7 @@ import {
   type RampDownStep,
 } from '@brewlab/shared';
 import { api, useApi } from '../lib/api';
+import { useDelayPassed } from '../lib/delay';
 import { Banner, Field, Modal } from '../components/ui';
 import { ProfileCurve, STAGE_COLOUR } from '../components/charts';
 import { fmt, fToC, roundF } from '../lib/format';
@@ -60,6 +61,10 @@ export default function ProfileEditor() {
     warnings?: string[];
   } | null>(null);
   const [busy, setBusy] = useState(false);
+  // Which record the form holds. Until it is this page's, the form still has the
+  // blank template in it, and drawing that would flash a curve that isn't yours.
+  const [loadedId, setLoadedId] = useState<string | null>(null);
+  const loadingPassed = useDelayPassed();
 
   // Anything that did not originate in our own custom folder gets written as a
   // new profile rather than over the original, so say so on the button.
@@ -73,6 +78,7 @@ export default function ProfileEditor() {
       setProfile(record.data.profile);
       setIsPublic(record.data.isPublic);
       setDescription(record.data.description ?? '');
+      setLoadedId(record.data.id);
     }
   }, [record.data]);
 
@@ -181,6 +187,8 @@ export default function ProfileEditor() {
       const body = { name: profile.name, description: description || null, isPublic, profile };
       if (isNew) {
         const created = await api<BrewProfileRecord>('/profiles', { method: 'POST', body });
+        // The form already holds what was saved, so there is nothing to wait for.
+        setLoadedId(created.id);
         navigate(`/profiles/${created.id}`, { replace: true });
       } else {
         await api(`/profiles/${id}`, { method: 'PATCH', body });
@@ -212,6 +220,11 @@ export default function ProfileEditor() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (!isNew && loadedId !== id) {
+    if (record.error) return <Banner kind="bad">{record.error}</Banner>;
+    return loadingPassed ? <p className="faint">Loading…</p> : null;
   }
 
   return (

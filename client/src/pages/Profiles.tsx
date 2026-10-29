@@ -1,9 +1,17 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { STOCK_PROFILES, totalDurationS, yieldG, type BrewProfileRecord } from '@brewlab/shared';
+import {
+  STOCK_PROFILES,
+  totalDurationS,
+  yieldG,
+  type BrewProfileRecord,
+  type Coffee,
+} from '@brewlab/shared';
 import { api, useApi } from '../lib/api';
-import { Empty, Modal } from '../components/ui';
+import { useAi } from '../lib/ai';
+import { useSuggestProfile } from '../lib/suggestProfile';
+import { Banner, Empty, Modal, Working, useElapsed } from '../components/ui';
 import { ProfileCurve } from '../components/charts';
 import { tempF } from '../lib/format';
 
@@ -23,6 +31,11 @@ export default function Profiles() {
   const profiles = useApi<BrewProfileRecord[]>('/profiles');
   const navigate = useNavigate();
   const [picking, setPicking] = useState(false);
+  // Only fetched once the picker opens: most visits here never start a profile.
+  const coffees = useApi<Coffee[]>(picking ? '/coffees' : null, [picking]);
+  const ai = useAi();
+  const { suggest, suggesting, error: suggestError } = useSuggestProfile();
+  const designingFor = useElapsed(suggesting != null);
 
   async function createFromStock(name: string) {
     const stock = STOCK_PROFILES.find((p) => p.name === name)!;
@@ -103,12 +116,60 @@ export default function Profiles() {
         </div>
       ) : (
         <Empty title="No profiles yet">
-          Start from one of Fellow's factory profiles and bend it to your coffee.
+          Start from one of Fellow's factory profiles, or have one designed for a coffee you've
+          added.
         </Empty>
       )}
 
       {picking ? (
         <Modal title="Start from" onClose={() => setPicking(false)} wide>
+          <h3 className="mb-2">Designed for a coffee</h3>
+          {!ai.enabled ? (
+            <p className="small faint mt-1 mb-4">{ai.reason}</p>
+          ) : coffees.data && !coffees.data.length ? (
+            <p className="small dim mt-1 mb-4">
+              <Link className="link" to="/coffees">
+                Add a coffee
+              </Link>{' '}
+              and a profile can be designed around its origin, process and roast.
+            </p>
+          ) : coffees.data ? (
+            <>
+              {suggestError ? (
+                <div className="mb-2">
+                  <Banner kind="bad">{suggestError}</Banner>
+                </div>
+              ) : null}
+              <div className="grid grid-2 mb-5">
+                {coffees.data.map((c) => (
+                  <button
+                    key={c.id}
+                    className="list-item"
+                    onClick={() => suggest(c.id)}
+                    disabled={suggesting != null}
+                    aria-busy={suggesting === c.id}
+                  >
+                    <div className="spread">
+                      <span className="item-title">{c.name}</span>
+                      {suggesting === c.id ? (
+                        <Working label="Designing" seconds={designingFor} />
+                      ) : null}
+                    </div>
+                    <div className="small dim mt-1">{c.roaster}</div>
+                    <div className="row-wrap small mt-2">
+                      {c.roastLevel ? <span className="tag">{c.roastLevel}</span> : null}
+                      {c.process ? <span className="tag cool">{c.process}</span> : null}
+                      {c.origin ? <span className="tag">{c.origin}</span> : null}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="small faint mt-1 mb-4">Loading your coffees…</p>
+          )}
+
+          <h3 className="mb-2">Blank or factory</h3>
           <div className="grid grid-2">
             <button className="list-item" onClick={() => navigate('/profiles/new')}>
               <div className="item-title">Blank profile</div>

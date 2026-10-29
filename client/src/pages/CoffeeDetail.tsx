@@ -1,17 +1,17 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import {
   suggestNextShot,
   type BrewProfileRecord,
   type Coffee,
-  type Es1Profile,
   type Grinder,
   type Shot,
 } from '@brewlab/shared';
-import { api, useApi } from '../lib/api';
+import { useApi } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useAi } from '../lib/ai';
 import { useMachines } from '../lib/machines';
+import { useSuggestProfile } from '../lib/suggestProfile';
 import { Banner, Empty, Modal, Stars, Stat, Working, useElapsed } from '../components/ui';
 import { DialInChart } from '../components/charts';
 import ShotForm from '../components/ShotForm';
@@ -21,34 +21,13 @@ import { baristaLine } from '../lib/coach';
 export default function CoffeeDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const ai = useAi();
   const { capabilities } = useMachines();
-  const [suggesting, setSuggesting] = useState(false);
-  const [suggestError, setSuggestError] = useState<string | null>(null);
+  const { suggest, suggesting: suggestingFor, error: suggestError } = useSuggestProfile();
+  const suggesting = suggestingFor != null;
   // The profile call thinks before it answers, so it can run for tens of
   // seconds. Real elapsed time beats a fake progress bar.
   const designingFor = useElapsed(suggesting);
-
-  // The suggestion opens unsaved in the editor: you review the curve before
-  // anything joins your library, let alone reaches the machine.
-  async function suggestProfile() {
-    setSuggesting(true);
-    setSuggestError(null);
-    try {
-      const res = await api<{ profile: Es1Profile; rationale: string; coffeeName: string }>(
-        `/ai/suggest-profile/${id}`,
-        { method: 'POST', body: {} },
-      );
-      navigate('/profiles/new', {
-        state: { draft: res.profile, rationale: res.rationale, coffeeName: res.coffeeName },
-      });
-    } catch (err) {
-      setSuggestError((err as Error).message);
-    } finally {
-      setSuggesting(false);
-    }
-  }
   const coffee = useApi<Coffee>(`/coffees/${id}`, [id]);
   const shots = useApi<Shot[]>(`/shots?coffeeId=${id}`, [id]);
   const coffees = useApi<Coffee[]>('/coffees');
@@ -89,7 +68,7 @@ export default function CoffeeDetail() {
           {capabilities.profiling !== 'none' ? (
             <button
               className="btn"
-              onClick={suggestProfile}
+              onClick={() => id && suggest(id)}
               disabled={!ai.enabled || suggesting}
               aria-busy={suggesting}
               title={ai.enabled ? 'Design a starting profile for this coffee' : ai.reason}
