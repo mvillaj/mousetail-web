@@ -248,9 +248,11 @@ aiRouter.post('/suggest-profile/:coffeeId', async (req: AuthedRequest, res) => {
         'a clear reason. Otherwise return 0 for both; when in doubt, 0.\n\n' +
         'Work in Fahrenheit throughout and do not mention Celsius.\n\n' +
         'description: one sentence, under 120 characters, saying what the profile is for.\n' +
-        'rationale: two or three plain sentences on what the shot does and why, in terms a ' +
-        'person dialling in would recognise, using the final numbers after any nudge and ' +
-        'saying why you nudged if you did.',
+        'rationale: at most three short sentences, under 70 words, on what the shot does and ' +
+        'why it suits this coffee, in terms a person dialling in would recognise. The ' +
+        'temperature, ratio and shot time are shown beside it, so name a number only when ' +
+        'it carries the reason. If you nudged, say why in one clause; if you did not, say ' +
+        'nothing about nudging.',
       messages: [
         {
           role: 'user',

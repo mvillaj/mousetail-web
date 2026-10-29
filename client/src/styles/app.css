@@ -283,6 +283,8 @@
   --action-hover: color-mix(in oklab, var(--action) 86%, var(--text));
   --action-soft: color-mix(in oklab, var(--action) 12%, var(--surface));
   --action-line: color-mix(in oklab, var(--action) 34%, var(--surface));
+  /* The action colour dark enough (or, in dark, light enough) to set text in. */
+  --action-ink: color-mix(in oklab, var(--action) 62%, var(--text));
   --focus-ring: color-mix(in oklab, var(--action) 26%, transparent);
   --on-body-dim: color-mix(in oklab, var(--on-body) 74%, var(--body));
   --on-body-line: color-mix(in oklab, var(--on-body) 18%, var(--body));
@@ -1050,10 +1052,26 @@ h3 {
 /* A suggested profile's reasoning: tinted with the action colour so it reads as
    the app speaking, not as a status message, and set wide enough to read. */
 .suggestion-note {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px 40px;
   background: var(--action-soft);
   border: 1px solid var(--action-line);
   border-radius: var(--radius);
   padding: 20px 24px;
+}
+/* Wide enough for the reading measure and the numbers side by side: the
+   numbers take the space the text would leave empty. */
+@media (min-width: 960px) {
+  .suggestion-note {
+    grid-template-columns: minmax(0, 72ch) auto;
+    justify-content: space-between;
+  }
+  .suggestion-numbers {
+    align-self: start;
+    padding-left: 32px;
+    border-left: 1px solid var(--action-line);
+  }
 }
 .suggestion-head {
   display: flex;
@@ -1080,13 +1098,47 @@ h3 {
 }
 .suggestion-reason {
   margin: 14px 0 0;
-  max-width: 72ch;
   font-size: 1rem;
   line-height: 1.6;
   text-wrap: pretty;
 }
+.suggestion-numbers dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  margin: 8px 0 0;
+}
+.suggestion-numbers .suggestion-eyebrow {
+  margin: 0;
+}
+@media (min-width: 960px) {
+  .suggestion-numbers dl {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+}
+.suggestion-numbers dt {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.suggestion-numbers dd {
+  margin: 2px 0 0;
+  font-family: var(--mono);
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.suggestion-numbers .unit {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  letter-spacing: 0;
+  color: var(--text-dim);
+  margin-left: 4px;
+}
 .suggestion-foot {
-  margin: 16px 0 0;
+  grid-column: 1 / -1;
+  margin: 0;
   padding-top: 14px;
   border-top: 1px solid var(--action-line);
   font-size: 0.88rem;
@@ -1973,6 +2025,46 @@ button.list-item:disabled {
 button.list-item:disabled:not([aria-busy='true']) {
   opacity: 0.55;
 }
+/* The one in flight lights up in the action colour, with a pill for its
+   status and a sweep along the bottom edge so it reads as working, not stuck. */
+button.list-item[aria-busy='true'] {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--action-line);
+  background: var(--action-soft);
+}
+button.list-item[aria-busy='true']::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 40%;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, transparent, var(--action), transparent);
+  animation: sweep 1.6s ease-in-out infinite;
+}
+@keyframes sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+button.list-item[aria-busy='true'] .working {
+  flex: none;
+  padding: 4px 11px 4px 9px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--action-line);
+  color: var(--action-ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+button.list-item[aria-busy='true'] .working-bars {
+  color: var(--action);
+}
 
 .stars {
   display: inline-flex;
@@ -2749,6 +2841,9 @@ button.list-item:disabled:not([aria-busy='true']) {
     animation: none;
     transform: scaleY(0.62);
     opacity: 0.6;
+  }
+  button.list-item[aria-busy='true']::after {
+    display: none;
   }
   .coach-glass .liquid-group,
   .brand-pour .brand-word,
