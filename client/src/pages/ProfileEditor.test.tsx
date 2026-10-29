@@ -1,7 +1,13 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { STOCK_PROFILES, type BrewProfileRecord } from '@brewlab/shared';
+import {
+  STOCK_PROFILES,
+  roundF,
+  totalDurationS,
+  yieldG,
+  type BrewProfileRecord,
+} from '@brewlab/shared';
 import ProfileEditor from './ProfileEditor';
 
 const record = (id: string, stock: string): BrewProfileRecord => {
@@ -116,5 +122,11 @@ describe('Profile editor with a suggested draft', () => {
     expect(note).toHaveTextContent('Soft and dark, so cooler and shorter.');
     expect(note).toHaveTextContent('Nothing is saved yet');
     expect(screen.getByLabelText('Name')).toHaveValue('Hi-Fi Espresso · Stepped down');
+
+    // The numbers as suggested sit beside the reasoning.
+    const numbers = within(note).getByLabelText('As suggested');
+    expect(numbers).toHaveTextContent(`${roundF(lever.brewTempC)}°F`);
+    expect(numbers).toHaveTextContent(`1:${lever.ratio.toFixed(1)}${yieldG(lever)} g out`);
+    expect(numbers).toHaveTextContent(`${totalDurationS(lever)}s`);
   });
 });

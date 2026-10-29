@@ -260,16 +260,47 @@ export default function ProfileEditor() {
 
       {draft ? (
         <section className="suggestion-note mb-4" aria-labelledby="suggestion-title">
-          <div className="suggestion-head">
-            <span className="suggestion-mark" aria-hidden="true">
-              <Sparkles size={16} strokeWidth={2.25} />
-            </span>
-            <div>
-              <p className="suggestion-eyebrow">Suggested starting point</p>
-              <h2 id="suggestion-title">For {draft.coffeeName}</h2>
+          <div className="suggestion-body">
+            <div className="suggestion-head">
+              <span className="suggestion-mark" aria-hidden="true">
+                <Sparkles size={16} strokeWidth={2.25} />
+              </span>
+              <div>
+                <p className="suggestion-eyebrow">Suggested starting point</p>
+                <h2 id="suggestion-title">For {draft.coffeeName}</h2>
+              </div>
             </div>
+            <p className="suggestion-reason">{draft.rationale}</p>
           </div>
-          <p className="suggestion-reason">{draft.rationale}</p>
+          {/* What was suggested, which stays put while the form below changes. */}
+          <div className="suggestion-numbers">
+            <p className="suggestion-eyebrow" id="suggestion-numbers">
+              As suggested
+            </p>
+            <dl aria-labelledby="suggestion-numbers">
+              <div>
+                <dt>Temp</dt>
+                <dd>
+                  {roundF(draft.draft.brewTempC)}
+                  <span className="unit">°F</span>
+                </dd>
+              </div>
+              <div>
+                <dt>Ratio</dt>
+                <dd>
+                  1:{draft.draft.ratio.toFixed(1)}
+                  <span className="unit">{yieldG(draft.draft)} g out</span>
+                </dd>
+              </div>
+              <div>
+                <dt>Shot</dt>
+                <dd>
+                  {totalDurationS(draft.draft)}
+                  <span className="unit">s</span>
+                </dd>
+              </div>
+            </dl>
+          </div>
           <p className="suggestion-foot">
             Nothing is saved yet. Change anything you disagree with, then Save.
           </p>
