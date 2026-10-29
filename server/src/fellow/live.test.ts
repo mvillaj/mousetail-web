@@ -146,6 +146,18 @@ test('pre-infusion outside the machine limits is reported', () => {
   assert.ok(describePayloadLoss(p).some((m) => m.includes('1-120s')));
 });
 
+test('a fractional pre-infusion hold is sent as whole bar, and the loss is said', () => {
+  // Saved before the editor enforced whole bar. Fellow refuses 2.5 outright.
+  const p = fromEs1Wire(LEVER);
+  p.stages[0] = { ...p.stages[0], pressureBar: 2.5, endPressureBar: 2.5 };
+  assert.equal(toEs1Payload(p).preInfusionHoldPressure, 3);
+  assert.ok(describePayloadLoss(p).some((m) => m.includes('2.5 bar') && m.includes('3 is sent')));
+  assert.ok(
+    !describePayloadLoss(fromEs1Wire(LEVER)).some((m) => m.includes('whole bar')),
+    'a whole-bar hold says nothing',
+  );
+});
+
 // The existing suite only covers folders spelled the way we hoped. These cover
 // the way the real captured account actually spells them, and the shape of a
 // mistake: an unrecognised folder must read as read-only, not writable.

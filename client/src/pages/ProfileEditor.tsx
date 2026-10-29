@@ -480,7 +480,7 @@ export default function ProfileEditor() {
                 <Field label="Bar">
                   <input
                     type="number"
-                    step="0.1"
+                    step={ES1_LIMITS.preInfusion.holdPressureBar.step}
                     min={ES1_LIMITS.preInfusion.holdPressureBar.min}
                     max={ES1_LIMITS.preInfusion.holdPressureBar.max}
                     value={shot.preInfusion.pressureBar}

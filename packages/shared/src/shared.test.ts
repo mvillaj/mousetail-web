@@ -549,6 +549,27 @@ test('pre-infusion may run longer than an infusion step', () => {
 
 const GOOD_PROFILE = { id: 'p', name: 'x', doseG: 18, ratio: 2, brewTempC: 93, stages: [] };
 
+test('pre-infusion holds whole bar, as Fellow insists; infusion steps may not', () => {
+  const stage = (kind: 'preinfusion' | 'infusion', bar: number) => ({
+    id: kind,
+    kind,
+    durationS: 6,
+    pressureBar: bar,
+    endPressureBar: bar,
+    flowLimitMlS: 4.5,
+  });
+  const at = (pre: number) =>
+    es1ProfileSchema.safeParse({
+      ...GOOD_PROFILE,
+      stages: [stage('preinfusion', pre), stage('infusion', 8.5)],
+    });
+  assert.equal(at(2).success, true);
+  // Fellow, 2026-10-29: 400 "preInfusionHoldPressure must be an integer number".
+  const refused = at(2.5);
+  assert.equal(refused.success, false);
+  assert.deepEqual(refused.error?.issues[0]?.path, ['stages', 0, 'pressureBar']);
+});
+
 test('the Fellow opt-in takes an explicit yes and nothing looser', () => {
   assert.equal(fellowOptInSchema.safeParse({ accept: true }).success, true);
   for (const body of [{}, { accept: false }, { accept: 'true' }, { accept: 1 }, null]) {
