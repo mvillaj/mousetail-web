@@ -1,0 +1,87 @@
+import { act, render, screen } from '@testing-library/react';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { STOCK_PROFILES, type BrewProfileRecord } from '@brewlab/shared';
+import ProfileEditor from './ProfileEditor';
+
+const record = (id: string, stock: string): BrewProfileRecord => {
+  const s = STOCK_PROFILES.find((p) => p.name === stock)!;
+  return {
+    id,
+    userId: 'usr_1',
+    name: s.name,
+    description: s.description,
+    isPublic: false,
+    profile: { ...s, id },
+    syncState: 'local',
+    fellowProfileId: null,
+    lastPushedAt: null,
+    origin: 'local',
+    sourceDeviceId: null,
+    createdAt: '2026-10-01T00:00:00.000Z',
+  } as BrewProfileRecord;
+};
+
+const json = (status: number, body?: unknown) =>
+  new Response(body === undefined ? null : JSON.stringify(body), { status });
+
+/** Each profile answers only when its test says so. */
+function stubProfiles() {
+  const pending = new Map<string, (r: Response) => void>();
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => {
+      const m = /^\/api\/profiles\/(.+)$/.exec(url);
+      if (m) return new Promise<Response>((r) => pending.set(m[1], r));
+      return json(200, { optedIn: false });
+    }),
+  );
+  return async (id: string, body: BrewProfileRecord) => {
+    await vi.waitFor(() => expect(pending.has(id)).toBe(true));
+    await act(async () => pending.get(id)!(json(200, body)));
+  };
+}
+
+let go: (path: string) => void = () => {};
+function Driver() {
+  go = useNavigate();
+  return null;
+}
+
+const renderAt = (path: string) =>
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <Driver />
+      <Routes>
+        <Route path="/profiles/:id" element={<ProfileEditor />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe('Profile editor loading', () => {
+  it('shows nothing of the blank template while a saved profile loads', async () => {
+    const answer = stubProfiles();
+    renderAt('/profiles/prf_lever');
+
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+
+    await answer('prf_lever', record('prf_lever', 'Lever'));
+    expect(screen.getByRole('heading', { level: 1, name: 'Lever' })).toBeInTheDocument();
+  });
+
+  it('drops the last profile at once when switching to another', async () => {
+    const answer = stubProfiles();
+    renderAt('/profiles/prf_lever');
+    await answer('prf_lever', record('prf_lever', 'Lever'));
+
+    act(() => go('/profiles/prf_classic'));
+    expect(screen.queryByRole('heading', { level: 1, name: 'Lever' })).not.toBeInTheDocument();
+
+    await answer('prf_classic', record('prf_classic', 'Classic 9 Bar'));
+    expect(screen.getByRole('heading', { level: 1, name: 'Classic 9 Bar' })).toBeInTheDocument();
+  });
+});

@@ -274,6 +274,12 @@
   --bg: color-mix(in oklab, var(--body) 7%, var(--ground));
   --bg-raised: var(--surface);
 
+  /* Neutral fills for buttons, tags and hovers. An ink wash rather than
+     --surface-2, which in light matches the page ground almost exactly: a wash
+     darkens whatever it sits on, so it reads on the ground and on a card. */
+  --wash: color-mix(in oklab, var(--text) 8%, transparent);
+  --wash-strong: color-mix(in oklab, var(--text) 14%, transparent);
+
   --action-hover: color-mix(in oklab, var(--action) 86%, var(--text));
   --action-soft: color-mix(in oklab, var(--action) 12%, var(--surface));
   --action-line: color-mix(in oklab, var(--action) 34%, var(--surface));
@@ -299,6 +305,11 @@
   --banner-info-border: var(--border-strong);
   --banner-info-text: var(--text);
   --shadow: var(--shadow-pop);
+}
+/* Dark surfaces already step clearly off the ground, so dark keeps its fills. */
+:root[data-theme='dark'] {
+  --wash: var(--surface-2);
+  --wash-strong: color-mix(in oklab, var(--surface-2) 84%, var(--text));
 }
 
 :root[data-theme='light'] {
@@ -665,7 +676,7 @@ h3 {
     color 0.15s;
 }
 .nav a:hover {
-  background: var(--surface-2);
+  background: var(--wash);
   color: var(--text);
 }
 .nav a.active {
@@ -1531,7 +1542,7 @@ h3 {
   padding: 8px 18px;
   border-radius: 999px;
   border: 1px solid transparent;
-  background: var(--surface-2);
+  background: var(--wash);
   color: var(--text);
   cursor: pointer;
   display: inline-flex;
@@ -1552,7 +1563,7 @@ h3 {
   flex: none;
 }
 .btn:hover {
-  background: color-mix(in oklab, var(--surface-2) 84%, var(--text));
+  background: var(--wash-strong);
 }
 .btn:active:not(:disabled) {
   transform: scale(0.95) translateY(1px);
@@ -1574,15 +1585,22 @@ h3 {
   color: var(--text-dim);
 }
 .btn-ghost:hover {
-  background: var(--surface-2);
+  background: var(--wash);
   color: var(--text);
 }
+/* Filled like a plain button, in the bad tint, so it sits level with the
+   button beside it rather than reading as a different kind of control. */
 .btn-danger {
-  background: transparent;
+  background: var(--tint-bad-bg);
   color: var(--bad);
-  border-color: var(--tint-bad-border);
 }
 .btn-danger:hover {
+  background: color-mix(in oklab, var(--tint-bad-bg) 82%, var(--bad));
+}
+.btn-ghost.btn-danger {
+  background: transparent;
+}
+.btn-ghost.btn-danger:hover {
   background: var(--tint-bad-bg);
 }
 .btn-sm {
@@ -1751,7 +1769,7 @@ input[type='range'] {
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 999px;
-  background: var(--surface-2);
+  background: var(--wash);
   color: var(--text-dim);
 }
 .tag.accent {
@@ -1885,11 +1903,11 @@ input[type='range'] {
   border-color: var(--border);
 }
 a.list-item:hover,
-button.list-item:hover {
+button.list-item:hover:not(:disabled) {
   border-color: var(--action-line);
 }
 a.list-item:active,
-button.list-item:active {
+button.list-item:active:not(:disabled) {
   transform: scale(0.985);
 }
 button.list-item {
@@ -1898,6 +1916,13 @@ button.list-item {
   font: inherit;
   color: inherit;
   cursor: pointer;
+}
+/* While one suggestion runs, the rest wait; the one in flight stays legible. */
+button.list-item:disabled {
+  cursor: progress;
+}
+button.list-item:disabled:not([aria-busy='true']) {
+  opacity: 0.55;
 }
 
 .stars {

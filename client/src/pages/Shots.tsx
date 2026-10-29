@@ -198,7 +198,7 @@ export default function Shots() {
                       Log another like this
                     </button>
                     <button
-                      className="btn btn-danger btn-sm"
+                      className="btn btn-danger"
                       onClick={async () => {
                         await remove(s.id);
                         setExpanded(null);
