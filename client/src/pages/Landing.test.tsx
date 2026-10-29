@@ -56,7 +56,7 @@ describe('Landing', () => {
     const webp = photo.closest('picture')!.querySelector('source[type="image/webp"]');
     expect(webp).toHaveAttribute('srcset', expect.stringContaining('.webp 2000w'));
     expect(within(splash).getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Dial in espresso, one change at a time.',
+      'Bitter? Sour? Chase the mouse tail.',
     );
     expect(splash.querySelectorAll('.btn-primary')).toHaveLength(1);
     // The headline and its press belong to the main landmark, not before it.

@@ -746,7 +746,7 @@ function Splash() {
         </Link>
       </header>
       <div className="splash-copy">
-        <h1>Dial in espresso, one change at a time.</h1>
+        <h1>Bitter? Sour? Chase the mouse tail.</h1>
         <p>A shot log and dial-in coach for any espresso machine.</p>
         <div className="landing-ctas">
           <Link to="/sign-up" className="btn btn-primary btn-lg">

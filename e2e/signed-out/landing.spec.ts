@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 
 test('visitors get the landing page with a way in', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Dial in espresso');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Chase the mouse tail');
   await expect(page.getByRole('link', { name: 'Sign in' }).first()).toBeVisible();
 });
 

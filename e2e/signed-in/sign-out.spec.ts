@@ -18,7 +18,7 @@ test('signing out returns to the landing page without reloading', async ({ page 
   await page.getByRole('button', { name: 'Sign out' }).click();
 
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Dial in espresso');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Chase the mouse tail');
   // The landing shows before Clerk finishes signing out, and the reload this
   // guards against came a few hundred milliseconds after that, so give it time.
   await page.waitForTimeout(1500);
