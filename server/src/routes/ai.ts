@@ -18,6 +18,7 @@ import {
 import { db, id } from '../lib/db';
 import { asUrl, fetchPageText } from '../lib/page-text';
 import { requireAuth, type AuthedRequest } from '../lib/auth';
+import { UPSTREAM_FAILED } from '../lib/http';
 import { aiLimiter } from '../lib/limits';
 import { budgetRefusal, recordUsage } from '../lib/ai-budget';
 import { toCoffee } from '../lib/rows';
@@ -130,7 +131,9 @@ aiRouter.post('/extract-coffee', async (req: AuthedRequest, res) => {
     try {
       source = await fetchPageText(link);
     } catch (err) {
-      res.status(502).json({ error: `Could not read that page: ${(err as Error).message}` });
+      res
+        .status(UPSTREAM_FAILED)
+        .json({ error: `Could not read that page: ${(err as Error).message}` });
       return;
     }
   }
@@ -163,7 +166,7 @@ aiRouter.post('/extract-coffee', async (req: AuthedRequest, res) => {
 
     const check = coffeeExtractionSchema.safeParse(response.parsed_output);
     if (!check.success) {
-      res.status(502).json({ error: 'Could not read that as a coffee.' });
+      res.status(UPSTREAM_FAILED).json({ error: 'Could not read that as a coffee.' });
       return;
     }
     res.json(check.data);
@@ -175,7 +178,7 @@ aiRouter.post('/extract-coffee', async (req: AuthedRequest, res) => {
       });
       return;
     }
-    res.status(502).json({ error: (err as Error).message });
+    res.status(UPSTREAM_FAILED).json({ error: (err as Error).message });
   }
 });
 
@@ -268,7 +271,7 @@ aiRouter.post('/suggest-profile/:coffeeId', async (req: AuthedRequest, res) => {
 
     const check = profileSuggestionSchema.safeParse(response.parsed_output);
     if (!check.success) {
-      res.status(502).json({ error: 'Could not design a profile for that coffee.' });
+      res.status(UPSTREAM_FAILED).json({ error: 'Could not design a profile for that coffee.' });
       return;
     }
     const s = check.data;
@@ -284,7 +287,7 @@ aiRouter.post('/suggest-profile/:coffeeId', async (req: AuthedRequest, res) => {
 
     const valid = es1ProfileSchema.safeParse(profile);
     if (!valid.success) {
-      res.status(502).json({
+      res.status(UPSTREAM_FAILED).json({
         error: `The suggestion fell outside the machine's limits: ${
           valid.error.issues[0]?.message ?? 'invalid profile'
         }`,
@@ -301,6 +304,6 @@ aiRouter.post('/suggest-profile/:coffeeId', async (req: AuthedRequest, res) => {
       });
       return;
     }
-    res.status(502).json({ error: (err as Error).message });
+    res.status(UPSTREAM_FAILED).json({ error: (err as Error).message });
   }
 });

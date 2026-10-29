@@ -17,7 +17,7 @@ import {
   type PreInfusionStep,
   type RampDownStep,
 } from '@brewlab/shared';
-import { api, useApi } from '../lib/api';
+import { api, ApiError, useApi } from '../lib/api';
 import { useDelayPassed } from '../lib/delay';
 import { Banner, Field, Modal } from '../components/ui';
 import { ProfileCurve, STAGE_COLOUR } from '../components/charts';
@@ -32,6 +32,14 @@ const BLANK: Es1Profile = {
   brewTempC: 93,
   stages: [makeStage('preinfusion'), makeStage('infusion'), makeStage('rampdown')],
 };
+
+/** What /fellow/push answers, whether Fellow took the profile or not. */
+interface PushResult {
+  ok: boolean;
+  message: string;
+  raw?: unknown;
+  warnings?: string[];
+}
 
 export default function ProfileEditor() {
   const { id } = useParams<{ id: string }>();
@@ -54,12 +62,7 @@ export default function ProfileEditor() {
   const [status, setStatus] = useState<{ kind: 'good' | 'bad' | 'info'; text: string } | null>(
     null,
   );
-  const [pushResult, setPushResult] = useState<{
-    message: string;
-    raw?: unknown;
-    ok: boolean;
-    warnings?: string[];
-  } | null>(null);
+  const [pushResult, setPushResult] = useState<PushResult | null>(null);
   const [busy, setBusy] = useState(false);
   // Which record the form holds. Until it is this page's, the form still has the
   // blank template in it, and drawing that would flash a curve that isn't yours.
@@ -209,14 +212,13 @@ export default function ProfileEditor() {
     }
     setBusy(true);
     try {
-      const res = await api<{ ok: boolean; message: string; raw?: unknown; warnings?: string[] }>(
-        `/fellow/push/${id}`,
-        { method: 'POST', body: {} },
-      );
+      const res = await api<PushResult>(`/fellow/push/${id}`, { method: 'POST', body: {} });
       setPushResult(res);
       await record.reload();
     } catch (err) {
-      setPushResult({ ok: false, message: (err as Error).message });
+      // A rejection still carries Fellow's raw answer and the warnings; keep them.
+      const body = err instanceof ApiError ? (err.body as Partial<PushResult> | null) : null;
+      setPushResult({ ...body, ok: false, message: (err as Error).message });
     } finally {
       setBusy(false);
     }

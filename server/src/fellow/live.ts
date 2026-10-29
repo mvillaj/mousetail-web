@@ -52,6 +52,11 @@ const API = {
 } as const;
 const USER_AGENT = process.env.FELLOW_USER_AGENT ?? 'Fellow/5 CFNetwork/1568.300.101 Darwin/24.2.0';
 const RETRY_STATUS = new Set([408, 500, 501, 502, 503, 504]);
+/**
+ * Per attempt. Four attempts plus backoff stay under Cloudflare's 100 s, past
+ * which it answers the browser with an HTML page and our reason is lost.
+ */
+const REQUEST_TIMEOUT_MS = 20_000;
 
 async function request<T>(
   path: string,
@@ -60,6 +65,7 @@ async function request<T>(
 ): Promise<T> {
   const { token, headers, ...rest } = init;
   const res = await fetch(`${API_HOST}${path}`, {
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     ...rest,
     headers: {
       'Content-Type': 'application/json',
@@ -444,6 +450,7 @@ function explainFailure(
   deviceId: string,
 ): string {
   const body = err.body as { message?: unknown } | null | undefined;
+  if (err.status === undefined) return `Could not reach Fellow: ${err.message}`;
   const deviceMissing =
     err.status === 404 && /device could not be found/i.test(String(body?.message ?? ''));
 
@@ -456,7 +463,18 @@ function explainFailure(
   }
   if (deviceMissing) return `Fellow does not recognise device ${deviceId}.`;
   if (err.status === 401) return 'Fellow rejected the session token — reconnect the account.';
-  return `Fellow rejected the profile. ${err.message}`;
+  return `Fellow rejected the profile (${err.status}): ${fellowReason(err.body) ?? err.message}`;
+}
+
+/**
+ * Fellow's own words, when it gave any. Its validation errors are NestJS-shaped:
+ * `message` is a list of complaints ("email must be an email"), otherwise a string.
+ */
+function fellowReason(body: unknown): string | null {
+  const message = (body as { message?: unknown } | null | undefined)?.message;
+  if (Array.isArray(message) && message.length) return message.map(String).join('; ');
+  if (typeof message === 'string' && message) return message;
+  return null;
 }
 
 export const liveFellowClient: FellowClient = {
@@ -499,7 +517,8 @@ export const liveFellowClient: FellowClient = {
         message: `Updated "${profile.name}" on the machine.`,
       };
     } catch (err) {
-      return { ok: false, message: (err as Error).message };
+      const e = err as Error & { status?: number; body?: unknown };
+      return { ok: false, raw: e.body ?? String(e), message: explainFailure(e, deviceId) };
     }
   },
 

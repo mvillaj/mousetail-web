@@ -130,3 +130,32 @@ describe('Profile editor with a suggested draft', () => {
     expect(numbers).toHaveTextContent(`${totalDurationS(lever)}s`);
   });
 });
+
+describe('Sending to Fellow', () => {
+  it("shows Fellow's reason and raw answer when it refuses the profile", async () => {
+    const rejected = {
+      ok: false,
+      message: 'Fellow rejected the profile (400): temperature must not be greater than 94',
+      error: 'Fellow rejected the profile (400): temperature must not be greater than 94',
+      raw: { statusCode: 400, message: ['temperature must not be greater than 94'] },
+      warnings: [],
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url === '/api/fellow/status') return json(200, { optedIn: true });
+        if (url === '/api/fellow/push/prf_lever') return json(424, rejected);
+        return json(200, record('prf_lever', 'Lever'));
+      }),
+    );
+    renderAt('/profiles/prf_lever');
+
+    const send = await screen.findByRole('button', { name: 'Send to Fellow' });
+    await act(async () => send.click());
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Fellow said no')).toBeInTheDocument();
+    expect(within(dialog).getByText(rejected.message)).toBeInTheDocument();
+    expect(within(dialog).getByText(/"statusCode": 400/)).toBeInTheDocument();
+  });
+});

@@ -6,6 +6,7 @@ import {
 } from '@brewlab/shared';
 import { db, jsonCol, nowIso } from '../lib/db';
 import { requireAuth, type AuthedRequest } from '../lib/auth';
+import { UPSTREAM_FAILED } from '../lib/http';
 import { decryptSecret, encryptSecret } from '../lib/crypto';
 import { fellowOptInGate } from '../lib/fellow-opt-in';
 import { fellowConnectLimiter } from '../lib/limits';
@@ -152,7 +153,7 @@ fellowRouter.get('/devices/:deviceId/profiles', async (req: AuthedRequest, res) 
   try {
     res.json(await getFellowClient().listProfiles(conn.session, req.params.deviceId));
   } catch (err) {
-    res.status(502).json({ error: (err as Error).message });
+    res.status(UPSTREAM_FAILED).json({ error: (err as Error).message });
   }
 });
 
@@ -187,7 +188,7 @@ fellowRouter.get('/devices/:deviceId/profiles/parsed', async (req: AuthedRequest
         }),
     );
   } catch (err) {
-    res.status(502).json({ error: (err as Error).message });
+    res.status(UPSTREAM_FAILED).json({ error: (err as Error).message });
   }
 });
 
@@ -206,7 +207,7 @@ fellowRouter.post('/import/:deviceId/:remoteId', async (req: AuthedRequest, res)
     )) as Es1WireProfileRead[];
     wire = raw.find((w) => w && String(w.id) === req.params.remoteId);
   } catch (err) {
-    res.status(502).json({ error: (err as Error).message });
+    res.status(UPSTREAM_FAILED).json({ error: (err as Error).message });
     return;
   }
   if (!wire) {
@@ -303,8 +304,15 @@ fellowRouter.post('/push/:profileId', async (req: AuthedRequest, res) => {
          SET sync_state='pushed', fellow_profile_id=?, last_pushed_at=?, origin=?, source_device_id=?
        WHERE id=?`,
     ).run(result.fellowProfileId ?? null, nowIso(), nextOrigin, deviceId, record.id);
+  } else {
+    // The only place Fellow's reason is kept once the response has gone.
+    console.warn(`Fellow push failed for ${record.id} on ${deviceId}:`, result.message, result.raw);
   }
-  res
-    .status(result.ok ? 200 : 502)
-    .json({ ...result, warnings: describePayloadLoss(record.profile) });
+  // `error` is what the client's api() surfaces; the rest rides along on the
+  // ApiError so the modal can still show Fellow's raw answer and the warnings.
+  res.status(result.ok ? 200 : UPSTREAM_FAILED).json({
+    ...result,
+    ...(result.ok ? {} : { error: result.message }),
+    warnings: describePayloadLoss(record.profile),
+  });
 });
