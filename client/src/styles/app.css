@@ -679,8 +679,11 @@ h3 {
   background: var(--wash);
   color: var(--text);
 }
+/* Mixed into the page ground rather than --surface: --action-soft is a tint of
+   white, and the ground already carries the finish's cast, so the two land on
+   nearly the same colour and the pill vanishes. */
 .nav a.active {
-  background: var(--action-soft);
+  background: color-mix(in oklab, var(--action) 18%, var(--bg));
   color: var(--text);
   font-weight: 600;
 }
@@ -957,7 +960,7 @@ h3 {
   min-width: 0;
 }
 .sheet .nav a.active {
-  background: var(--action-soft);
+  background: color-mix(in oklab, var(--action) 18%, var(--surface));
 }
 .sheet .sidebar-foot {
   padding: 14px 4px 0;
@@ -1042,6 +1045,52 @@ h3 {
   50% {
     opacity: 0.5;
   }
+}
+
+/* A suggested profile's reasoning: tinted with the action colour so it reads as
+   the app speaking, not as a status message, and set wide enough to read. */
+.suggestion-note {
+  background: var(--action-soft);
+  border: 1px solid var(--action-line);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+}
+.suggestion-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.suggestion-mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--action);
+  color: var(--on-action);
+}
+.suggestion-eyebrow {
+  margin: 0 0 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.suggestion-reason {
+  margin: 14px 0 0;
+  max-width: 72ch;
+  font-size: 1rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+.suggestion-foot {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--action-line);
+  font-size: 0.88rem;
+  color: var(--text-dim);
 }
 
 /* ── Surfaces ──────────────────────────────────────────────────────────────── */

@@ -2,16 +2,16 @@ import { Router, type Response } from 'express';
 import { z } from 'zod';
 import { jsonSchemaOutputFormat } from '@anthropic-ai/sdk/helpers/json-schema';
 import {
-  ES1_LIMITS,
+  NUDGE_LIMITS,
   PROCESS_VALUES,
-  roundF,
-  RANGE_NOTES,
   ROAST_VALUES,
+  baselineFor,
   coffeeExtractionSchema,
   es1ProfileSchema,
   profileSuggestionSchema,
   suggestionToProfile,
   type AiStatus,
+  type BaselineShot,
   type Coffee,
   type Es1Profile,
 } from '@brewlab/shared';
@@ -101,30 +101,12 @@ const COFFEE_SCHEMA = {
 const PROFILE_SCHEMA = {
   type: 'object',
   properties: {
-    name: { type: 'string' },
     description: { type: 'string' },
-    doseG: { type: 'number' },
-    ratio: { type: 'number' },
-    brewTempF: { type: 'number' },
-    stages: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          kind: { type: 'string', enum: ['preinfusion', 'infusion', 'rampdown'] },
-          label: { type: 'string' },
-          durationS: { type: 'number' },
-          pressureBar: { type: 'number' },
-          endPressureBar: { type: 'number' },
-          flowLimitMlS: { type: 'number' },
-        },
-        required: ['kind', 'label', 'durationS', 'pressureBar', 'endPressureBar', 'flowLimitMlS'],
-        additionalProperties: false,
-      },
-    },
+    tempNudgeF: { type: 'integer' },
+    ratioNudge: { type: 'number' },
     rationale: { type: 'string' },
   },
-  required: ['name', 'description', 'doseG', 'ratio', 'brewTempF', 'stages', 'rationale'],
+  required: ['description', 'tempNudgeF', 'ratioNudge', 'rationale'],
   additionalProperties: false,
 } as const;
 
@@ -215,17 +197,24 @@ function describeCoffee(c: Coffee): string {
     .join('\n');
 }
 
-/** What the machine will actually accept, handed over as hard bounds. */
-const MACHINE_BRIEF = [
-  `Temperature ${roundF(ES1_LIMITS.tempC.min)}-${roundF(ES1_LIMITS.tempC.max)} °F.`,
-  `Pressure ${ES1_LIMITS.pressureBar.min}-${ES1_LIMITS.pressureBar.max} bar.`,
-  `Dose ${ES1_LIMITS.doseG.min}-${ES1_LIMITS.doseG.max} g.`,
-  `Ratio ${ES1_LIMITS.ratio.min}-${ES1_LIMITS.ratio.max}.`,
-  `Each stage ${ES1_LIMITS.stageDurationS.min}-${ES1_LIMITS.stageDurationS.max} s.`,
-  `${ES1_LIMITS.stages.min}-${ES1_LIMITS.stages.max} stages, ${ES1_LIMITS.totalDurationS.max} s total at most.`,
-  `Flow limit ${ES1_LIMITS.flowMlS.min}-${ES1_LIMITS.flowMlS.max} ml/s.`,
-  RANGE_NOTES.pressureBar,
-].join(' ');
+/** The baseline shot as the model reads it: numbers first, then why. */
+function describeBaseline(b: BaselineShot): string {
+  const stages = b.stages.map((st) => {
+    const bar =
+      st.pressureBar === st.endPressureBar
+        ? `${st.pressureBar} bar`
+        : `${st.pressureBar} to ${st.endPressureBar} bar`;
+    const fill = st.kind === 'preinfusion' ? `, filling at ${st.flowLimitMlS} ml/s` : '';
+    return `- ${st.label}: ${st.durationS} s at ${bar}${fill}`;
+  });
+  return [
+    `${b.brewTempF} °F, ${b.doseG} g at 1:${b.ratio.toFixed(1)}.`,
+    ...stages,
+    '',
+    'Why:',
+    ...b.reasons.map((r) => `- ${r}`),
+  ].join('\n');
+}
 
 aiRouter.post('/suggest-profile/:coffeeId', async (req: AuthedRequest, res) => {
   if (blocked(req, res)) return;
@@ -241,6 +230,7 @@ aiRouter.post('/suggest-profile/:coffeeId', async (req: AuthedRequest, res) => {
     return;
   }
   const coffee = toCoffee(row);
+  const base = baselineFor(coffee);
 
   try {
     const response = await aiClient().messages.parse({
@@ -248,22 +238,25 @@ aiRouter.post('/suggest-profile/:coffeeId', async (req: AuthedRequest, res) => {
       max_tokens: 8000,
       thinking: { type: 'adaptive' },
       system:
-        'You design espresso shots for the Fellow Espresso Series 1, which runs a shot as ' +
-        'ordered timed phases. Each phase targets a pressure and the machine modulates flow ' +
-        'to hold it. A falling curve is expressed as successive flat infusion stages, not as ' +
-        'one sloped stage. Only pre-infusion honours a flow limit.\n\n' +
-        'Work in Fahrenheit throughout — whole degrees, the way the machine displays them. ' +
-        'brewTempF is Fahrenheit, and every temperature you mention in the rationale must ' +
-        'be Fahrenheit too. Do not mention Celsius at all.\n\n' +
-        `Machine limits, never to be exceeded: ${MACHINE_BRIEF}\n\n` +
-        'Design for the coffee in front of you rather than returning a factory default: ' +
-        'lighter and denser generally wants hotter, longer, and a gentler ramp; darker and ' +
-        'softer wants cooler and shorter. In the rationale, say in two or three plain ' +
-        'sentences what you chose and why, in terms a person dialling in would recognise.',
+        'You explain a starting espresso profile for the Fellow Espresso Series 1, which ' +
+        'runs a shot as ordered timed phases, each holding a pressure.\n\n' +
+        'The shot has already been worked out from the coffee by fixed rules, so the same ' +
+        'coffee always starts from the same curve. Do not redesign it. You may nudge two ' +
+        `things: brew temperature by up to ${NUDGE_LIMITS.tempF} °F either way, in whole ` +
+        `degrees, and the ratio by up to ${NUDGE_LIMITS.ratio} either way. Nudge only when ` +
+        'something the rules do not read -- tasting notes, varietal, roaster notes -- gives ' +
+        'a clear reason. Otherwise return 0 for both; when in doubt, 0.\n\n' +
+        'Work in Fahrenheit throughout and do not mention Celsius.\n\n' +
+        'description: one sentence, under 120 characters, saying what the profile is for.\n' +
+        'rationale: two or three plain sentences on what the shot does and why, in terms a ' +
+        'person dialling in would recognise, using the final numbers after any nudge and ' +
+        'saying why you nudged if you did.',
       messages: [
         {
           role: 'user',
-          content: `Design a starting profile for this coffee.\n\n${describeCoffee(coffee)}`,
+          content:
+            `The coffee:\n${describeCoffee(coffee)}\n\n` +
+            `The baseline shot:\n${describeBaseline(base)}`,
         },
       ],
       output_config: { format: jsonSchemaOutputFormat(PROFILE_SCHEMA) },
@@ -278,9 +271,14 @@ aiRouter.post('/suggest-profile/:coffeeId', async (req: AuthedRequest, res) => {
     }
     const s = check.data;
 
-    // Held to exactly the same standard as anything a user typed: a generation that
-    // breaks a machine limit is rejected here rather than opened in the editor.
-    const profile: Es1Profile = suggestionToProfile(s, (i) => `sug${i}_${id('stg')}`);
+    // The rules and the nudge limits keep this inside the machine already; it is
+    // still held to the same standard as anything a user typed.
+    const profile: Es1Profile = suggestionToProfile(
+      base,
+      s,
+      coffee.name,
+      (i) => `sug${i}_${id('stg')}`,
+    );
 
     const valid = es1ProfileSchema.safeParse(profile);
     if (!valid.success) {
