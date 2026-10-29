@@ -25,7 +25,8 @@ import {
   capabilitiesOf,
   specToUserMachine,
 } from './machines.ts';
-import { coffeeExtractionSchema, suggestionToProfile } from './ai.ts';
+import { coffeeExtractionSchema, profileNameFor, suggestionToProfile } from './ai.ts';
+import { NUDGE_LIMITS, baselineFor } from './baseline.ts';
 import { buildStages, splitStages } from './es1.ts';
 import { roundF } from './temp.ts';
 import {
@@ -268,77 +269,151 @@ test('capabilitiesOf treats an empty bench as the plain logbook', () => {
   assert.equal(capabilitiesOf(null).cloud, null);
 });
 
-// A generated profile is held to exactly the same standard as a typed one. These
-// pin the property that makes the feature safe to point at a real machine.
-const GOOD_SUGGESTION = {
-  name: 'Guji, gentle',
-  description: 'Long pre-infusion for a dense washed Ethiopian.',
-  doseG: 18,
-  ratio: 2.5,
-  brewTempF: 201,
-  stages: [
-    {
-      kind: 'preinfusion' as const,
-      label: 'Pre-infusion',
-      durationS: 12,
-      pressureBar: 3,
-      endPressureBar: 3,
-      flowLimitMlS: 4,
-    },
-    {
-      kind: 'infusion' as const,
-      label: 'Infusion',
-      durationS: 24,
-      pressureBar: 8,
-      endPressureBar: 8,
-      flowLimitMlS: 4.5,
-    },
-  ],
-  rationale: 'Dense and light, so hotter and longer with a soft ramp.',
+// A suggested profile's numbers come from rules, not the model. These pin the
+// two properties that matter: the same coffee always gets the same curve, and
+// nothing the model sends can push it past what the machine accepts.
+const ROASTS = [null, 'light', 'medium-light', 'medium', 'medium-dark', 'dark'] as const;
+const PROCESSES = [
+  null,
+  'washed',
+  'natural',
+  'honey',
+  'anaerobic',
+  'experimental',
+  'other',
+] as const;
+const ALTITUDES = [null, 900, 1500, 2200];
+const HI_FI = { roastLevel: 'medium-dark', process: 'natural', altitudeMasl: 1000 } as const;
+const NO_NUDGE = {
+  description: 'For a soft natural.',
+  tempNudgeF: 0,
+  ratioNudge: 0,
+  rationale: '',
 };
 
-test('a well-formed suggestion becomes a valid profile', () => {
-  const p = suggestionToProfile(GOOD_SUGGESTION, (i) => `s${i}`);
-  assert.equal(es1ProfileSchema.safeParse(p).success, true);
-  assert.equal(p.stages.length, 2);
+test('the same coffee always gets the same baseline', () => {
+  assert.deepEqual(baselineFor(HI_FI), baselineFor({ ...HI_FI }));
+});
+
+test('every coffee the app can describe gets a profile the machine accepts', () => {
+  for (const roastLevel of ROASTS)
+    for (const process of PROCESSES)
+      for (const altitudeMasl of ALTITUDES) {
+        const base = baselineFor({ roastLevel, process, altitudeMasl });
+        // The extremes of what the model may nudge, and then some.
+        for (const tempNudgeF of [-9, 0, 9])
+          for (const ratioNudge of [-1, 0, 1]) {
+            const p = suggestionToProfile(
+              base,
+              { ...NO_NUDGE, tempNudgeF, ratioNudge },
+              'Any coffee',
+              (i) => `s${i}`,
+            );
+            const check = es1ProfileSchema.safeParse(p);
+            assert.ok(
+              check.success,
+              `${roastLevel}/${process}/${altitudeMasl} ${tempNudgeF}/${ratioNudge}: ${check.error?.issues[0]?.message}`,
+            );
+          }
+      }
+});
+
+test('lighter roasts run hotter, longer and at a longer ratio than darker ones', () => {
+  const at = (roastLevel: (typeof ROASTS)[number]) =>
+    baselineFor({ roastLevel, process: null, altitudeMasl: null });
+  const order = ['light', 'medium-light', 'medium', 'medium-dark', 'dark'] as const;
+  for (let i = 1; i < order.length; i++) {
+    const lighter = at(order[i - 1]);
+    const darker = at(order[i]);
+    assert.ok(lighter.brewTempF > darker.brewTempF, `${order[i - 1]} hotter than ${order[i]}`);
+    assert.ok(lighter.ratio > darker.ratio, `${order[i - 1]} longer ratio than ${order[i]}`);
+  }
+  const { reasons: _unknown, ...unknown } = at(null);
+  const { reasons: _medium, ...medium } = at('medium');
+  assert.deepEqual(unknown, medium, 'an unknown roast starts from medium');
+});
+
+test('a fragile process gets a slower, longer pre-infusion, even on a dark roast', () => {
+  const dark = baselineFor({ roastLevel: 'dark', process: 'washed', altitudeMasl: null });
+  const darkNatural = baselineFor({ roastLevel: 'dark', process: 'natural', altitudeMasl: null });
+  assert.notEqual(dark.stages[0].kind, 'preinfusion');
+  assert.equal(darkNatural.stages[0].kind, 'preinfusion');
+  assert.ok(darkNatural.stages[0].flowLimitMlS < 4.5);
+  assert.equal(darkNatural.brewTempF, dark.brewTempF - 1);
+});
+
+test('altitude moves the temperature, and never past 201 °F', () => {
+  const at = (altitudeMasl: number | null) =>
+    baselineFor({ roastLevel: 'medium', process: null, altitudeMasl }).brewTempF;
+  assert.equal(at(2200), at(null) + 1);
+  assert.equal(at(900), at(null) - 1);
+  assert.equal(
+    baselineFor({ roastLevel: 'light', process: null, altitudeMasl: 2200 }).brewTempF,
+    201,
+  );
+});
+
+test('the model can only nudge temperature and ratio, and only so far', () => {
+  const base = baselineFor(HI_FI);
+  const p = suggestionToProfile(
+    base,
+    { ...NO_NUDGE, tempNudgeF: 7, ratioNudge: -0.9 },
+    'Hi-Fi Espresso',
+    (i) => `s${i}`,
+  );
+  assert.equal(roundF(p.brewTempC), base.brewTempF + NUDGE_LIMITS.tempF);
+  assert.equal(p.ratio, Math.round((base.ratio - NUDGE_LIMITS.ratio) * 10) / 10);
+  assert.deepEqual(
+    p.stages.map(({ id: _id, ...st }) => st),
+    base.stages,
+    'the curve is the baseline, whatever the model sends',
+  );
+});
+
+test('a nudge lands on whole degrees and tenths of a ratio', () => {
+  const base = baselineFor(HI_FI);
+  const p = suggestionToProfile(
+    base,
+    { ...NO_NUDGE, tempNudgeF: 1.4, ratioNudge: 0.13 },
+    'Hi-Fi Espresso',
+    (i) => `s${i}`,
+  );
+  assert.equal(roundF(p.brewTempC), base.brewTempF + 1);
+  assert.equal(p.ratio, Math.round((base.ratio + 0.1) * 10) / 10);
+});
+
+test('the profile stores Celsius for the Fahrenheit it was worked out in', () => {
+  const base = baselineFor({ roastLevel: 'light', process: 'washed', altitudeMasl: null });
+  const p = suggestionToProfile(base, NO_NUDGE, 'Guji Hambela', (i) => `s${i}`);
+  assert.equal(roundF(p.brewTempC), 201);
+  assert.ok(Math.abs(p.brewTempC - 93.888) < 0.01, `got ${p.brewTempC}`);
   assert.equal(p.stages[0].id, 's0', 'every stage gets an id the editor can key on');
 });
 
-test('the model answers in Fahrenheit and storage keeps Celsius', () => {
-  // The model works in whole degrees F, the way the machine displays them; the
-  // profile that reaches the schema and the wire format is Celsius.
-  const p = suggestionToProfile(GOOD_SUGGESTION, (i) => `s${i}`);
-  assert.equal(roundF(p.brewTempC), 201, 'round-trips back to the degree it chose');
-  assert.ok(Math.abs(p.brewTempC - 93.888) < 0.01, `got ${p.brewTempC}`);
-  assert.equal(es1ProfileSchema.safeParse(p).success, true, '201F sits inside the 94C ceiling');
-});
-
-test('a Fahrenheit temperature above the machine ceiling is still rejected', () => {
-  // 202F is 94.4C — one degree past what the ES1 accepts.
-  const p = suggestionToProfile({ ...GOOD_SUGGESTION, brewTempF: 202 }, (i) => `s${i}`);
-  assert.equal(es1ProfileSchema.safeParse(p).success, false);
-});
-
-test('a suggestion over the pressure ceiling is rejected, not opened', () => {
+test('a suggested profile is named for its coffee and its curve, not by the model', () => {
   const p = suggestionToProfile(
-    {
-      ...GOOD_SUGGESTION,
-      stages: [{ ...GOOD_SUGGESTION.stages[1], pressureBar: 15, endPressureBar: 15 }],
-    },
+    baselineFor(HI_FI),
+    NO_NUDGE,
+    '  Hi-Fi   Espresso ',
     (i) => `s${i}`,
   );
-  assert.equal(es1ProfileSchema.safeParse(p).success, false, '15 bar must not reach the machine');
+  assert.equal(p.name, 'Hi-Fi Espresso · Stepped down');
 });
 
-test('a suggestion over the total shot time is rejected', () => {
-  const long = Array.from({ length: 8 }, () => ({ ...GOOD_SUGGESTION.stages[1], durationS: 30 }));
-  const p = suggestionToProfile({ ...GOOD_SUGGESTION, stages: long }, (i) => `s${i}`);
-  assert.equal(es1ProfileSchema.safeParse(p).success, false, '240s exceeds the 180s cap');
+test('every roast names its curve differently', () => {
+  const shapes = ROASTS.filter((r) => r !== null).map(
+    (roastLevel) => baselineFor({ roastLevel, process: null, altitudeMasl: null }).shape,
+  );
+  assert.equal(new Set(shapes).size, shapes.length);
 });
 
-test('a suggestion far outside the temperature range is rejected', () => {
-  const p = suggestionToProfile({ ...GOOD_SUGGESTION, brewTempF: 240 }, (i) => `s${i}`);
-  assert.equal(es1ProfileSchema.safeParse(p).success, false);
+test('a long coffee name is cut to fit, and the curve keeps its place', () => {
+  const long = 'Finca El Paraíso Lychee Thermal Shock Double Anaerobic Castillo Microlot';
+  const name = profileNameFor(long, 'Stepped down');
+  assert.equal(name.length, 50);
+  assert.ok(name.endsWith('… · Stepped down'), name);
+  const p = suggestionToProfile(baselineFor(HI_FI), NO_NUDGE, long, (i) => `s${i}`);
+  assert.equal(es1ProfileSchema.safeParse(p).success, true, 'still a valid profile');
 });
 
 test('the extraction schema keeps unstated fields null rather than inventing them', () => {

@@ -85,3 +85,36 @@ describe('Profile editor loading', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Classic 9 Bar' })).toBeInTheDocument();
   });
 });
+
+describe('Profile editor with a suggested draft', () => {
+  it('shows the draft under its name and explains it above the curve', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json(200, { optedIn: false })),
+    );
+    const lever = STOCK_PROFILES.find((p) => p.name === 'Lever')!;
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/profiles/new',
+            state: {
+              draft: { ...lever, id: 'suggested', name: 'Hi-Fi Espresso · Stepped down' },
+              rationale: 'Soft and dark, so cooler and shorter.',
+              coffeeName: 'Hi-Fi Espresso',
+            },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/profiles/new" element={<ProfileEditor />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const note = await screen.findByRole('region', { name: 'For Hi-Fi Espresso' });
+    expect(note).toHaveTextContent('Soft and dark, so cooler and shorter.');
+    expect(note).toHaveTextContent('Nothing is saved yet');
+    expect(screen.getByLabelText('Name')).toHaveValue('Hi-Fi Espresso · Stepped down');
+  });
+});

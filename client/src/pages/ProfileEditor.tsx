@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { Sparkles, X } from 'lucide-react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   ES1_LIMITS,
@@ -259,12 +259,21 @@ export default function ProfileEditor() {
       ) : null}
 
       {draft ? (
-        <Banner kind="info">
-          <div className="mb-2">
-            <strong>Suggested for {draft.coffeeName}.</strong> {draft.rationale} Nothing is saved
-            yet — change whatever you disagree with, then hit Save.
+        <section className="suggestion-note mb-4" aria-labelledby="suggestion-title">
+          <div className="suggestion-head">
+            <span className="suggestion-mark" aria-hidden="true">
+              <Sparkles size={16} strokeWidth={2.25} />
+            </span>
+            <div>
+              <p className="suggestion-eyebrow">Suggested starting point</p>
+              <h2 id="suggestion-title">For {draft.coffeeName}</h2>
+            </div>
           </div>
-        </Banner>
+          <p className="suggestion-reason">{draft.rationale}</p>
+          <p className="suggestion-foot">
+            Nothing is saved yet. Change anything you disagree with, then Save.
+          </p>
+        </section>
       ) : null}
 
       {fellowOn && clonesOnPush ? (

@@ -14,6 +14,7 @@
 
 import { z } from 'zod';
 import type { Es1Profile } from './es1.ts';
+import { applyNudge, type BaselineShot } from './baseline.ts';
 import { fToC } from './temp.ts';
 
 export const PROCESS_VALUES = [
@@ -52,31 +53,18 @@ export const coffeeExtractionSchema = z.object({
 
 export type CoffeeExtraction = z.infer<typeof coffeeExtractionSchema>;
 
-/** A generated shot, before ids are attached and the real schema validates it. */
+/**
+ * What the model returns for a suggested profile. It does not design the shot:
+ * `baselineFor` does that by rule, so the same coffee always gets the same curve.
+ * The model may nudge temperature and ratio within `NUDGE_LIMITS` for what the
+ * rules cannot read, and explains the result. There is no name either: code
+ * builds it from the coffee and the curve's shape (`profileNameFor`).
+ */
 export const profileSuggestionSchema = z.object({
-  name: z.string(),
   description: z.string(),
-  doseG: z.number(),
-  ratio: z.number(),
-  /**
-   * Whole degrees Fahrenheit, because that is what the machine displays and what
-   * the rest of the app shows. Converted to the Celsius the schema and the wire
-   * format expect in `suggestionToProfile`.
-   */
-  brewTempF: z.number(),
-  stages: z
-    .array(
-      z.object({
-        kind: z.enum(['preinfusion', 'infusion', 'rampdown']),
-        label: z.string(),
-        durationS: z.number(),
-        pressureBar: z.number(),
-        endPressureBar: z.number(),
-        flowLimitMlS: z.number(),
-      }),
-    )
-    .min(1)
-    .max(12),
+  /** Whole degrees Fahrenheit added to the baseline, the way the machine shows them. */
+  tempNudgeF: z.number(),
+  ratioNudge: z.number(),
   /** Why this shape, in the user's terms. Shown above the curve. */
   rationale: z.string(),
 });
@@ -90,26 +78,45 @@ export interface AiStatus {
 }
 
 /**
- * Turn a generated suggestion into a real profile. Kept pure and here rather than
- * in the route so the safety property -- that an out-of-limits generation is
- * caught by `es1ProfileSchema` and never reaches the editor -- is testable
+ * Turn the baseline and the model's nudge into a real profile. Kept pure and here
+ * rather than in the route so the properties that matter -- the same coffee gives
+ * the same curve, and no nudge can push it past the machine -- are testable
  * without a model or an API key.
  */
 export function suggestionToProfile(
+  base: BaselineShot,
   s: ProfileSuggestion,
+  coffeeName: string,
   stageId: (i: number) => string,
 ): Es1Profile {
+  const shot = applyNudge(base, { tempF: s.tempNudgeF, ratio: s.ratioNudge });
   return {
     id: 'suggested',
-    name: s.name,
+    name: profileNameFor(coffeeName, base.shape),
     description: s.description,
-    doseG: s.doseG,
-    ratio: s.ratio,
+    doseG: shot.doseG,
+    ratio: shot.ratio,
     // The one conversion. A whole degree F rarely lands on a clean degree C,
     // which is exactly what real captured profiles look like (93.88, not 94).
-    brewTempC: fToC(s.brewTempF),
-    stages: s.stages.map((st, i) => ({ ...st, id: stageId(i) })),
+    brewTempC: fToC(shot.brewTempF),
+    stages: shot.stages.map((st, i) => ({ ...st, id: stageId(i) })),
   };
+}
+
+/** Profile names stop at 50 characters, coffee names at 120. */
+const PROFILE_NAME_MAX = 50;
+
+/**
+ * A suggested profile is named for its coffee and the shape of its curve, as in
+ * "Hi-Fi Espresso · Stepped down": findable by the bag, and telling one curve
+ * from another at a glance. A long coffee name is cut to fit; the shape stays.
+ */
+export function profileNameFor(coffeeName: string, shape: string): string {
+  const suffix = ` · ${shape}`;
+  const room = PROFILE_NAME_MAX - suffix.length;
+  const name = coffeeName.trim().replace(/\s+/g, ' ');
+  const fitted = name.length <= room ? name : `${name.slice(0, room - 1).trimEnd()}…`;
+  return fitted + suffix;
 }
 
 /**
