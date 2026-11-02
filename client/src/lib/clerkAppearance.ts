@@ -75,6 +75,9 @@ function buildAppearance() {
         color: v('--text'),
         fontWeight: '600',
       },
+      // The rules either side of "or" default to colorBorder at 7% alpha, which
+      // all but disappears on --surface. Draw them at full strength, like the inputs.
+      dividerLine: { background: v('--border-strong') },
       // Clerk gives the footer its own subtle background, which shows up as a
       // seam against --surface. A hairline keeps "Secured by" apart from the form.
       footer: { background: 'transparent', borderTop: `1px solid ${v('--border')}` },

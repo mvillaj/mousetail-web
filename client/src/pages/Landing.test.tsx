@@ -58,17 +58,31 @@ describe('Landing', () => {
     expect(within(splash).getByRole('heading', { level: 1 })).toHaveTextContent(
       'Bitter? Sour? Chase the mouse tail.',
     );
-    expect(splash.querySelectorAll('.btn-primary')).toHaveLength(1);
+    // The splash says what the app is for, and names the machine.
+    expect(splash).toHaveTextContent(/profile studio for the Fellow Espresso Series\s1/);
     // The headline and its press belong to the main landmark, not before it.
     expect(splash.closest('main')).not.toBeNull();
-    expect(within(splash).getByRole('link', { name: 'Create account' })).toHaveAttribute(
+    // The one press shows the pull; the account ask waits until the coach has earned it.
+    const press = splash.querySelectorAll<HTMLElement>('.btn-primary');
+    expect(press).toHaveLength(1);
+    expect(press[0]).toHaveAccessibleName(/watch a shot pull/i);
+    expect(press[0]).toHaveAttribute('href', '#pull');
+    expect(within(splash).queryByRole('link', { name: 'Create account' })).toBeNull();
+    expect(screen.getByRole('link', { name: /coach my own shots/i })).toHaveAttribute(
       'href',
       '/sign-up',
     );
-    expect(within(splash).getByRole('link', { name: /watch a shot pull/i })).toHaveAttribute(
+  });
+
+  it('ends on the poured glass and the ways in', () => {
+    const { container } = renderLanding();
+    const close = container.querySelector<HTMLElement>('.close')!;
+    expect(within(close).getByText('End of shot')).toBeInTheDocument();
+    expect(within(close).getByRole('link', { name: 'Create account' })).toHaveAttribute(
       'href',
-      '#pull',
+      '/sign-up',
     );
+    expect(screen.queryByRole('heading', { name: /who it/i })).toBeNull();
   });
 
   it('holds the pull until it scrolls into view', () => {

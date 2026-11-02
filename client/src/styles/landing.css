@@ -36,13 +36,13 @@
   height: 100svh;
   min-height: 520px;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr;
   overflow: hidden;
   isolation: isolate;
   background: #1c120c;
   color: var(--splash-ink);
 }
-/* The picture only chooses a format; the bar, copy and cue claim their rows
+/* The picture only chooses a format; the bar and copy claim their rows
    by name so nothing else in the splash can take one. */
 .splash picture {
   display: contents;
@@ -52,9 +52,6 @@
 }
 .splash-copy {
   grid-row: 2;
-}
-.splash-cue {
-  grid-row: 3;
 }
 .splash-photo {
   position: absolute;
@@ -102,7 +99,7 @@
 
 .splash-copy {
   align-self: end;
-  padding: 0 var(--splash-inset);
+  padding: 0 var(--splash-inset) clamp(40px, 9vh, 88px);
 }
 .splash-copy h1 {
   font-weight: 600;
@@ -116,31 +113,13 @@
 }
 .splash-copy p {
   margin: 18px 0 0;
+  max-width: 34em;
+  text-wrap: pretty;
   font-size: clamp(1.04rem, 1.4vw, 1.2rem);
   color: var(--splash-dim);
 }
 .splash-copy .landing-ctas {
   margin-top: 28px;
-}
-
-.splash-cue {
-  justify-self: end;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 var(--splash-inset) clamp(24px, 5vh, 44px);
-  padding: 8px 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--splash-dim);
-  transition: color 0.15s;
-}
-.splash-cue:hover {
-  color: var(--splash-ink);
-}
-.splash-cue svg {
-  width: 17px;
-  height: 17px;
 }
 
 /* ── The sheet: everything after the photo, on the app's own ground ── */
@@ -581,6 +560,25 @@
   align-items: center;
   text-align: center;
 }
+/* The shot has poured: its glass stands over the lockup, not in a gutter. */
+.landing .close .yield-mark {
+  position: static;
+  order: 0;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  margin: 0 0 28px;
+}
+.landing .close .yield-mark .shot-glass {
+  margin-left: 0;
+}
+.landing .close .stage-mark-label {
+  margin-top: 10px;
+  align-items: center;
+}
 .landing .close .brand-lockup {
   font-size: clamp(3.2rem, 8vw, 5rem);
 }
@@ -672,9 +670,6 @@
   .splash-copy .landing-ctas .btn,
   .close .landing-ctas .btn {
     flex: 1 1 auto;
-  }
-  .splash-cue {
-    justify-self: start;
   }
   .landing-sheet {
     border-radius: 22px 22px 0 0;

@@ -18,7 +18,9 @@ test('the photo fills the first screen, with one way in on it', async ({ page })
   const box = await photo.boundingBox();
   const viewport = page.viewportSize()!;
   expect(box!.height).toBeGreaterThanOrEqual(viewport.height - 1);
-  await expect(page.getByRole('link', { name: 'Create account' }).first()).toBeInViewport();
+  await expect(
+    page.locator('.splash').getByRole('link', { name: /watch a shot pull/i }),
+  ).toBeInViewport();
   await expect(page.getByRole('button', { name: /pull it again/i })).not.toBeInViewport();
   // The bar sits at the top of the photo, not pushed down by it.
   const bar = await page.locator('.splash .landing-bar').boundingBox();
@@ -29,7 +31,7 @@ test('the photo fills the first screen, with one way in on it', async ({ page })
 test('a short window can still scroll to the splash press', async ({ page }) => {
   await page.setViewportSize({ width: 812, height: 375 });
   await page.goto('/');
-  const press = page.locator('.splash').getByRole('link', { name: 'Create account' });
+  const press = page.locator('.splash').getByRole('link', { name: /watch a shot pull/i });
   await press.scrollIntoViewIfNeeded();
   await expect(press).toBeInViewport();
 });
@@ -37,8 +39,20 @@ test('a short window can still scroll to the splash press', async ({ page }) => 
 test('a dark finish still gets a press that shows on the photo', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('brewlab.finish', 'black'));
   await page.goto('/');
-  const press = page.locator('.splash').getByRole('link', { name: 'Create account' });
+  const press = page.locator('.splash').getByRole('link', { name: /watch a shot pull/i });
   await expect(press).toHaveCSS('background-color', 'rgb(241, 235, 228)');
+});
+
+test('the splash press takes you to the pull', async ({ page }) => {
+  await page.goto('/');
+  await page
+    .locator('.splash')
+    .getByRole('link', { name: /watch a shot pull/i })
+    .click();
+  await expect(page).toHaveURL(/#pull$/);
+  await expect(
+    page.getByRole('heading', { name: 'Every pull, as the machine runs it.', exact: true }),
+  ).toBeInViewport();
 });
 
 test('sign in opens the Clerk form', async ({ page }) => {
