@@ -26,7 +26,8 @@ import '../styles/landing.css';
 
 /**
  * The public front door. It opens on a photograph of a pour and nothing else
- * but the headline and one press; the page then slides up over it as one shot:
+ * but the headline and one press, which shows the pull before it asks for an
+ * account; the page then slides up over it as one shot:
  * a real factory profile pulls across the full width and pours into a glass,
  * and its stages carry the story below. Every demo runs the app's own shared code on sample inputs,
  * so what a visitor plays with here is what the app will tell them at the bench.
@@ -714,8 +715,9 @@ function Ctas() {
 }
 
 /**
- * The first screen: the pour, a headline and one press. Everything else waits
- * below the fold, and the page slides up over the photo as you scroll.
+ * The first screen: the pour, a headline and one press. The press shows a shot
+ * pull rather than asking for an account; the coach demo asks once it has earned it.
+ * Everything else waits below the fold, and the page slides up over the photo as you scroll.
  */
 function Splash() {
   return (
@@ -747,17 +749,17 @@ function Splash() {
       </header>
       <div className="splash-copy">
         <h1>Bitter? Sour? Chase the mouse tail.</h1>
-        <p>A shot log and dial-in coach for any espresso machine.</p>
+        <p>
+          Shot log, dial-in coach and profile studio for the Fellow Espresso Series&nbsp;1. One
+          change at a time, until your shot pours like this.
+        </p>
         <div className="landing-ctas">
-          <Link to="/sign-up" className="btn btn-primary btn-lg">
-            Create account
-          </Link>
+          <a href="#pull" className="btn btn-primary btn-lg">
+            Watch a shot pull
+            <ArrowDown aria-hidden="true" />
+          </a>
         </div>
       </div>
-      <a href="#pull" className="splash-cue">
-        Watch a shot pull
-        <ArrowDown aria-hidden="true" />
-      </a>
     </section>
   );
 }
@@ -772,9 +774,10 @@ export default function Landing() {
           <div className="intro-copy">
             <h2>Every pull, as the machine runs it.</h2>
             <p className="lead">
-              Mousetail keeps each shot with the setting that made it, hands back the one change to
-              make next and, on a Fellow Espresso Series&nbsp;1, builds the pressure profile the
-              machine runs. Here is one, from first drip to glass.
+              This is Modern Arc, one of the ES1’s factory profiles, from first drip to glass.
+              Mousetail builds profiles like it, logs every shot with the setting that made it, and
+              hands back the one change to make next. The log and coach work with any espresso
+              machine.
             </p>
           </div>
           <HeroPull />
@@ -836,19 +839,8 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="stage who" id="who">
-          <YieldMark />
-          <div className="stage-body">
-            <h2>Who it’s for</h2>
-            <p className="lead">
-              Home baristas who want a record of what they pulled and a plain answer about what to
-              change next. The log and coach work with any machine; ES1 owners get the profile
-              studio too.
-            </p>
-          </div>
-        </section>
-
         <section className="close">
+          <YieldMark />
           <BrandLockup />
           <p>Your next shot is the one to log.</p>
           <Ctas />
