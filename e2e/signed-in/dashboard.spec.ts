@@ -37,3 +37,31 @@ test('a slow reload fills in the shell and asks for the bench only once', async 
   await expect(page.getByRole('heading', { level: 1, name: /, E2E$/ })).toBeVisible();
   expect(machineCalls).toEqual([]);
 });
+
+// On a phone the shell's grid once shared a short page's spare height with the
+// top bar, so while the dashboard loaded the bar sat mid-screen and the whole
+// page jumped up when the cards landed.
+test('on a phone, the top bar and greeting hold still while the dashboard loads', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route('**/api/shots**', async (route) => {
+    await new Promise((r) => setTimeout(r, 800));
+    await route.continue();
+  });
+
+  await page.goto('/');
+  const heading = page.getByRole('heading', { level: 1, name: /, E2E$/ });
+  await expect(heading).toBeVisible();
+  const bar = page.locator('header.topbar');
+  const before = { bar: await bar.boundingBox(), heading: await heading.boundingBox() };
+  expect(before.bar?.y).toBe(0);
+
+  await expect(page.getByRole('heading', { name: 'Recent shots' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Dial-in progress' })).not.toHaveAttribute(
+    'aria-busy',
+    'true',
+  );
+  expect((await bar.boundingBox())?.y).toBe(0);
+  expect(Math.abs((await heading.boundingBox())!.y - before.heading!.y)).toBeLessThan(2);
+});

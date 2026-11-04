@@ -790,6 +790,10 @@ h3 {
 @media (max-width: 860px) {
   .shell {
     grid-template-columns: minmax(0, 1fr);
+    /* Top bar, then the page. Left implicit, a short page (a load still
+       landing) has the grid share the spare height between the two rows, so
+       the bar sits mid-screen and everything jumps up once the page fills. */
+    grid-template-rows: auto 1fr;
   }
   .sidebar {
     display: none;
@@ -2498,6 +2502,13 @@ button.list-item[aria-busy='true'] .working-bars {
   background: var(--crema-bitter);
 }
 
+/* A slow first load: the coach and dial-in placeholders take roughly the
+   height of the cards they stand in for, so Recent shots doesn't drop when
+   those land. Heights follow the loaded cards at each width. */
+.dash-top > [aria-busy='true'] {
+  min-height: 290px;
+}
+
 /* The totals, demoted to one quiet line: context, not a hero. */
 .dash-summary {
   display: flex;
@@ -2516,6 +2527,9 @@ button.list-item[aria-busy='true'] .working-bars {
   margin-right: 6px;
   font-variant-numeric: tabular-nums;
 }
+.dash-summary.is-pending b {
+  color: var(--text-faint);
+}
 .dash-summary b small {
   font-family: var(--sans);
   font-size: 0.8em;
@@ -2527,6 +2541,9 @@ button.list-item[aria-busy='true'] .working-bars {
 @media (max-width: 1020px) {
   .dash-top {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .dash-top > [aria-busy='true'] {
+    min-height: 255px;
   }
 }
 
@@ -2605,6 +2622,9 @@ button.list-item[aria-busy='true'] .working-bars {
   }
   .coach-actions .btn-ghost {
     display: none;
+  }
+  .dash-top > [aria-busy='true'] {
+    min-height: 265px;
   }
   .dialin-strip {
     gap: 4px;

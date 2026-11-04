@@ -110,6 +110,9 @@ export default function Dashboard() {
   const slow = useDelayPassed();
   const holding = (loadingShots || loadingStats) && !slow;
   const loadError = shots.error ?? stats.error;
+  // Hold the stats strip's place while it loads, unless the shots have already
+  // said there is nothing to total.
+  const statsPending = loadingStats && (loadingShots || Boolean(shots.data?.length));
   const unavailable = <p className="faint small">Unavailable until your shots load.</p>;
 
   return (
@@ -149,7 +152,7 @@ export default function Dashboard() {
           <div className="dash-top">
             {loadingShots ? (
               <section className="coach is-empty" aria-busy="true">
-                <ShotGlass yieldG={0} width={84} className="coach-glass" />
+                <ShotGlass yieldG={0} width={92} className="coach-glass" />
                 <p className="coach-reason">Loading your last shot…</p>
               </section>
             ) : latest && suggestion ? (
@@ -222,7 +225,7 @@ export default function Dashboard() {
               </section>
             )}
 
-            <section className="card" aria-label="Dial-in progress">
+            <section className="card" aria-label="Dial-in progress" aria-busy={loadingShots}>
               <div className="card-head">
                 <h2>{latest?.coffeeName ? `Dialing in ${latest.coffeeName}` : 'Dial-in'}</h2>
                 {latest?.coffeeId ? <Link to={`/coffees/${latest.coffeeId}`}>Details</Link> : null}
@@ -282,7 +285,27 @@ export default function Dashboard() {
             </section>
           </div>
 
-          {stats.data && stats.data.total > 0 ? (
+          {statsPending ? (
+            // Stands in for the strip so it doesn't slot in above Recent shots
+            // and push it down. Same labels, so it wraps to the same height.
+            <p className="dash-summary is-pending" aria-hidden="true">
+              <span>
+                <b>–</b>shots logged
+              </span>
+              <span>
+                <b>–</b>rated 4 stars or better
+              </span>
+              <span>
+                <b>–</b>average time
+              </span>
+              <span>
+                <b>–</b>average ratio
+              </span>
+              <span>
+                <b>–</b>days brewing this month
+              </span>
+            </p>
+          ) : stats.data && stats.data.total > 0 ? (
             <p className="dash-summary">
               <span>
                 <b>{stats.data.total}</b>shots logged
