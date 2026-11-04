@@ -83,3 +83,18 @@ test('the hero pull links each stage to its section', async ({ page }) => {
     page.getByRole('heading', { name: 'Then exactly one adjustment.', exact: true }),
   ).toBeInViewport();
 });
+
+// The manifest itself is only emitted by a production build (the dev server,
+// which this suite runs, keeps no service worker); this guards the head tags
+// an installed app reads its colour and home-screen icon from.
+test('the page carries what an installed app needs from it', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', /\S/);
+  await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute(
+    'content',
+    'Mousetail',
+  );
+  const icon = await page.request.get('/apple-touch-icon-180x180.png');
+  expect(icon.ok()).toBe(true);
+  expect(icon.headers()['content-type']).toBe('image/png');
+});

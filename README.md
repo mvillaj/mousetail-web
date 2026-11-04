@@ -135,6 +135,15 @@ and the app is otherwise untouched — it still needs no secrets to run.
 (finer, coarser, longer, shorter, or hold) from shot time and how it tasted.
 One change at a time, because two teaches you nothing.
 
+**Install it as an app.** Mousetail is a PWA: *Add to Home Screen* in Safari
+on iOS, or *Install app* in Chrome and Edge, and it opens full-screen beside
+the machine. The app shell is cached, so it opens without a network and says
+so; your data is never cached on the device, so logging a shot still needs a
+connection. New versions wait for you to tap *Reload* rather than restarting
+mid-shot. The service worker is only built by `pnpm build`, never in `pnpm dev`.
+Regenerate the home-screen icons from `client/public/favicon.svg` with
+`pnpm --filter @brewlab/client icons`.
+
 ---
 
 ## The Fellow integration

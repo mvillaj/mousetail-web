@@ -84,7 +84,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px var(--splash-inset) 0;
+  padding: calc(20px + env(safe-area-inset-top)) var(--splash-inset) 0;
 }
 .landing-bar .brand-lockup {
   font-size: 1.6rem;
@@ -662,7 +662,7 @@
 
 @media (max-width: 600px) {
   .landing-bar {
-    padding-top: 14px;
+    padding-top: calc(14px + env(safe-area-inset-top));
   }
   .landing-bar .brand-lockup {
     font-size: 1.35rem;

@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
@@ -7,6 +7,7 @@ import { clerkMiddleware } from '@clerk/express';
 import { globalLimiter } from './lib/limits';
 import { encryptionConfigured } from './lib/crypto';
 import { errorResponse } from './lib/http';
+import { serveClient } from './lib/static';
 import './lib/db';
 import { authRouter } from './routes/auth';
 import { changelogRouter } from './routes/changelog';
@@ -87,16 +88,7 @@ app.use('/api/changelog', changelogRouter);
 const here = dirname(fileURLToPath(import.meta.url));
 const CLIENT_DIST = process.env.BREWLAB_CLIENT_DIST ?? resolve(here, '../../client/dist');
 
-if (existsSync(CLIENT_DIST)) {
-  app.use(express.static(CLIENT_DIST));
-  // Deep links like /shots are client-side routes: hand them index.html and let
-  // the router sort it out. /api/* is excluded so an unmatched endpoint still
-  // gets the JSON 404 below instead of a page of HTML.
-  app.use((req, res, next) => {
-    if (req.path.startsWith('/api/')) return next();
-    res.sendFile(join(CLIENT_DIST, 'index.html'));
-  });
-}
+if (existsSync(CLIENT_DIST)) serveClient(app, CLIENT_DIST);
 
 app.use((req, res) => {
   res.status(404).json({ error: `No route for ${req.method} ${req.path}` });
