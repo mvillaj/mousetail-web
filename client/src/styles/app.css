@@ -23,6 +23,8 @@
 
   --good: #3f7a3a;
   --warn: #946510;
+  /* --warn is 4.4:1 on its own tint; text on that tint needs the deeper step. */
+  --warn-text: #80570d;
   --bad: #b03c2a;
   --cool: #33689a;
   --star: #e3a21a;
@@ -102,6 +104,7 @@
 
   --good: #86bb78;
   --warn: #dcaa4c;
+  --warn-text: #dcaa4c;
   --bad: #e47a64;
   --cool: #7eaad6;
   --star: #e8b24a;
@@ -300,6 +303,9 @@
   --banner-bad-bg: var(--tint-bad-bg);
   --banner-bad-border: var(--tint-bad-border);
   --banner-bad-text: var(--bad);
+  --banner-warn-bg: var(--tint-warn-bg);
+  --banner-warn-border: var(--tint-warn-border);
+  --banner-warn-text: var(--warn-text);
   --banner-good-bg: var(--tint-good-bg);
   --banner-good-border: var(--tint-good-border);
   --banner-good-text: var(--good);
@@ -517,18 +523,6 @@ h3 {
   font-size: 2rem;
 }
 
-/* Raw JSON from the Fellow API, shown for debugging. */
-.code-block {
-  margin: 0;
-  padding: var(--space-3);
-  overflow-x: auto;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-.code-block.capped {
-  max-height: 380px;
-}
 .banner-list {
   margin: 6px 0 0;
   padding-left: 18px;
@@ -1272,9 +1266,20 @@ h3 {
   gap: 8px;
   flex-shrink: 0;
 }
-/* Device and profile ids are long and unbroken; let them wrap rather than push. */
-.fellow-id {
-  overflow-wrap: anywhere;
+.fellow-device {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.fellow-device-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-dim);
 }
 .fellow-form {
   max-width: 420px;
@@ -1938,6 +1943,23 @@ input[type='range'] {
   border-color: var(--banner-good-border);
   background: var(--banner-good-bg);
   color: var(--banner-good-text);
+}
+.banner.warn {
+  border-color: var(--banner-warn-border);
+  background: var(--banner-warn-bg);
+  color: var(--banner-warn-text);
+}
+.banner.with-icon {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.banner-icon {
+  flex: none;
+  margin-top: 1px;
+}
+.banner.warn .banner-icon {
+  color: var(--warn);
 }
 .banner.info {
   border-color: var(--banner-info-border);

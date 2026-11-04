@@ -37,7 +37,6 @@ const BLANK: Es1Profile = {
 interface PushResult {
   ok: boolean;
   message: string;
-  raw?: unknown;
   warnings?: string[];
 }
 
@@ -216,7 +215,7 @@ export default function ProfileEditor() {
       setPushResult(res);
       await record.reload();
     } catch (err) {
-      // A rejection still carries Fellow's raw answer and the warnings; keep them.
+      // A rejection still carries the warnings; keep them.
       const body = err instanceof ApiError ? (err.body as Partial<PushResult> | null) : null;
       setPushResult({ ...body, ok: false, message: (err as Error).message });
     } finally {
@@ -638,16 +637,6 @@ export default function ProfileEditor() {
                   ))}
                 </ul>
               </Banner>
-            ) : null}
-            {pushResult.raw ? (
-              <>
-                <div className="small dim">
-                  Raw response — this is how you learn the real schema.
-                </div>
-                <pre className="code-block mono small">
-                  {JSON.stringify(pushResult.raw, null, 2)}
-                </pre>
-              </>
             ) : null}
           </div>
         </Modal>

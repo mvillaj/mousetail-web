@@ -6,8 +6,8 @@ import {
 } from '@brewlab/shared';
 import { db, jsonCol, nowIso } from '../lib/db';
 import { requireAuth, type AuthedRequest } from '../lib/auth';
-import { UPSTREAM_FAILED } from '../lib/http';
-import { decryptSecret, encryptSecret } from '../lib/crypto';
+import { GENERIC_SERVER_ERROR, UPSTREAM_FAILED } from '../lib/http';
+import { decryptSecret, encryptionConfigured, encryptSecret } from '../lib/crypto';
 import { fellowOptInGate } from '../lib/fellow-opt-in';
 import { fellowConnectLimiter } from '../lib/limits';
 import { toProfile } from '../lib/rows';
@@ -53,7 +53,7 @@ function disconnect(userId: string) {
 }
 
 const WARNING =
-  'Writes reach your real machine. ES1 profiles go to /v2/solo/devices/{id}/profiles. ' +
+  'Writes reach your real machine. ' +
   "Fellow's own factory profiles are read-only here: editing one saves a copy into your " +
   'custom folder rather than overwriting it. Flow limits are only sent for pre-infusion.';
 
@@ -112,10 +112,28 @@ fellowRouter.post('/connect', fellowConnectLimiter, async (req: AuthedRequest, r
     res.status(400).json({ error: 'A Fellow email and password are required' });
     return;
   }
+  // Check before the password goes to Fellow: signing in only to fail to store
+  // the token wastes a login and leaves the user nothing to act on. The setup
+  // detail is in the server's boot warning, not in this response.
+  if (!encryptionConfigured()) {
+    console.error('Fellow connect refused: BREWLAB_ENCRYPTION_KEY is missing or invalid.');
+    res.status(503).json({
+      error: "Connecting a Fellow account isn't available right now. Try again later.",
+    });
+    return;
+  }
   const client = getFellowClient();
+  let session: FellowSession;
+  let devices: Awaited<ReturnType<typeof client.listDevices>>;
   try {
-    const session = await client.login(parsed.data.email, parsed.data.password);
-    const devices = await client.listDevices(session);
+    session = await client.login(parsed.data.email, parsed.data.password);
+    devices = await client.listDevices(session);
+  } catch (err) {
+    // Fellow's own answer (wrong password, account locked) is the user's to read.
+    res.status(401).json({ error: (err as Error).message });
+    return;
+  }
+  try {
     db.prepare(
       `INSERT INTO fellow_connections (user_id, mode, email, access_token, devices, connected_at)
        VALUES (?, ?, ?, ?, ?, ?)
@@ -139,7 +157,8 @@ fellowRouter.post('/connect', fellowConnectLimiter, async (req: AuthedRequest, r
     };
     res.json(status);
   } catch (err) {
-    res.status(401).json({ error: (err as Error).message });
+    console.error('Could not store the Fellow connection:', err);
+    res.status(500).json({ error: GENERIC_SERVER_ERROR });
   }
 });
 

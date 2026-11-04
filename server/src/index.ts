@@ -6,6 +6,7 @@ import express from 'express';
 import { clerkMiddleware } from '@clerk/express';
 import { globalLimiter } from './lib/limits';
 import { encryptionConfigured } from './lib/crypto';
+import { errorResponse } from './lib/http';
 import './lib/db';
 import { authRouter } from './routes/auth';
 import { changelogRouter } from './routes/changelog';
@@ -103,7 +104,8 @@ app.use((req, res) => {
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);
-  res.status(500).json({ error: err.message });
+  const { status, body } = errorResponse(err);
+  res.status(status).json(body);
 });
 
 // Warn rather than refuse to boot: only the Fellow flow needs this, and taking

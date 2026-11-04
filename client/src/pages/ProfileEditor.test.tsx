@@ -132,7 +132,7 @@ describe('Profile editor with a suggested draft', () => {
 });
 
 describe('Sending to Fellow', () => {
-  it("shows Fellow's reason and raw answer when it refuses the profile", async () => {
+  it("shows Fellow's reason, but not its raw JSON, when it refuses the profile", async () => {
     const rejected = {
       ok: false,
       message: 'Fellow rejected the profile (400): temperature must not be greater than 94',
@@ -156,6 +156,7 @@ describe('Sending to Fellow', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Fellow said no')).toBeInTheDocument();
     expect(within(dialog).getByText(rejected.message)).toBeInTheDocument();
-    expect(within(dialog).getByText(/"statusCode": 400/)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/"statusCode"/)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/raw response/i)).not.toBeInTheDocument();
   });
 });
