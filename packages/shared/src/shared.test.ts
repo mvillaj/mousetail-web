@@ -17,7 +17,15 @@ import {
   snapToScale,
   specToUserGrinder,
 } from './grinders.ts';
-import { ES1_LIMITS, STOCK_PROFILES, pressureCurve, totalDurationS, yieldG } from './es1.ts';
+import {
+  ES1_LIMITS,
+  STOCK_PROFILES,
+  makeStage,
+  peakPressureBar,
+  pressureCurve,
+  totalDurationS,
+  yieldG,
+} from './es1.ts';
 import {
   BUILT_IN_MACHINES,
   NO_MACHINE_CAPABILITIES,
@@ -651,4 +659,14 @@ test('price tiers use separate bands for machines and grinders', () => {
   assert.equal(priceTier({ kind: 'grinder', priceUsd: 100 }), '$');
   assert.equal(priceTier({ kind: 'grinder', priceUsd: 200 }), '$$');
   assert.equal(priceTier({ kind: 'grinder', priceUsd: 400 }), '$$$');
+});
+
+test('peak pressure is the highest point of any stage, start or end', () => {
+  const stages = [
+    makeStage('preinfusion', { pressureBar: 3, endPressureBar: 3 }),
+    makeStage('infusion', { pressureBar: 6, endPressureBar: 9.2 }),
+    makeStage('rampdown', { pressureBar: 9, endPressureBar: 5 }),
+  ];
+  assert.equal(peakPressureBar({ stages }), 9.2);
+  assert.equal(peakPressureBar({ stages: [] }), null);
 });

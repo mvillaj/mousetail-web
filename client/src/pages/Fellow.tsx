@@ -1,9 +1,17 @@
 import { useState } from 'react';
+import { Coffee, TriangleAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import type { Es1Profile, FellowConnectionStatus, ProfileOrigin } from '@brewlab/shared';
+import {
+  peakPressureBar,
+  type Es1Profile,
+  type FellowConnectionStatus,
+  type FellowDevice,
+  type ProfileOrigin,
+} from '@brewlab/shared';
 import { api, useApi } from '../lib/api';
 import { Banner, Empty, Field } from '../components/ui';
-import { tempF } from '../lib/format';
+import { EspressoMachineIcon } from '../components/EspressoMachineIcon';
+import { fmt, tempF } from '../lib/format';
 
 interface RemoteProfile {
   remoteId: string;
@@ -81,13 +89,25 @@ export function OptInGate({ onEnabled }: { onEnabled: () => void }) {
   );
 }
 
+/**
+ * The line under a device name: the model when it says something the name does
+ * not (a renamed machine), and the firmware. Fellow's ids mean nothing to a user.
+ */
+function DeviceMeta({ device }: { device: FellowDevice }) {
+  const parts = [
+    device.model && device.model !== device.displayName ? device.model : null,
+    device.firmware ? `Firmware ${device.firmware}` : null,
+  ].filter(Boolean);
+  if (!parts.length) return null;
+  return <div className="small dim mt-1">{parts.join(' · ')}</div>;
+}
+
 export default function Fellow() {
   const status = useApi<FellowConnectionStatus>('/fellow/status');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [raw, setRaw] = useState<unknown>(null);
   const [remote, setRemote] = useState<{ deviceId: string; list: RemoteProfile[] } | null>(null);
   const [importing, setImporting] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
@@ -116,16 +136,7 @@ export default function Fellow() {
   async function turnOff() {
     await api('/fellow/opt-out', { method: 'POST' });
     setRemote(null);
-    setRaw(null);
     void status.reload();
-  }
-
-  async function dumpProfiles(deviceId: string) {
-    try {
-      setRaw(await api(`/fellow/devices/${deviceId}/profiles`));
-    } catch (err) {
-      setRaw({ error: (err as Error).message });
-    }
   }
 
   async function loadProfiles(deviceId: string) {
@@ -172,7 +183,7 @@ export default function Fellow() {
       {s && !s.optedIn ? <OptInGate onEnabled={() => void status.reload()} /> : null}
 
       {s?.optedIn && s.warning ? (
-        <Banner kind="bad">
+        <Banner kind="warn" icon={TriangleAlert}>
           <strong>Experimental</strong> — {s.warning}
         </Banner>
       ) : null}
@@ -195,25 +206,24 @@ export default function Fellow() {
               <div className="fellow-rows">
                 {s.devices.map((d) => (
                   <div key={d.id} className="fellow-row">
-                    <div className="min-w-0">
-                      <div className="row-wrap tight">
-                        <span className="item-title">{d.displayName}</span>
-                        <span className={`tag ${d.supportsEspressoProfiles ? 'good' : ''}`}>
-                          {d.supportsEspressoProfiles
-                            ? 'espresso profiles'
-                            : 'not an espresso machine'}
-                        </span>
-                      </div>
-                      <div className="small dim mt-1">
-                        {d.model}
-                        {d.firmware ? (
-                          <>
-                            {' · fw '}
-                            <span className="mono">{d.firmware}</span>
-                          </>
-                        ) : null}
-                        {' · '}
-                        <span className="mono fellow-id">{d.id}</span>
+                    <div className="fellow-device min-w-0">
+                      <span className="fellow-device-icon" aria-hidden="true">
+                        {d.supportsEspressoProfiles ? (
+                          <EspressoMachineIcon size={22} />
+                        ) : (
+                          <Coffee size={22} />
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="row-wrap tight">
+                          <span className="item-title">{d.displayName}</span>
+                          <span className={`tag ${d.supportsEspressoProfiles ? 'good' : ''}`}>
+                            {d.supportsEspressoProfiles
+                              ? 'espresso profiles'
+                              : 'not an espresso machine'}
+                          </span>
+                        </div>
+                        <DeviceMeta device={d} />
                       </div>
                     </div>
                     <div className="fellow-row-actions">
@@ -222,9 +232,6 @@ export default function Fellow() {
                           Profiles on this machine
                         </button>
                       ) : null}
-                      <button className="btn btn-ghost btn-sm" onClick={() => dumpProfiles(d.id)}>
-                        Raw JSON
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -262,9 +269,14 @@ export default function Fellow() {
                           {!p.editable ? <span className="tag">read-only</span> : null}
                         </div>
                         <div className="small dim mt-1">
-                          <span className="mono fellow-id">{p.remoteId}</span>
-                          {' · '}
                           <span className="mono">{p.profile.stages.length}</span> stages
+                          {peakPressureBar(p.profile) != null ? (
+                            <>
+                              {' · '}
+                              <span className="mono">{fmt(peakPressureBar(p.profile))}</span> bar
+                              peak
+                            </>
+                          ) : null}
                           {' · '}
                           {tempF(p.profile.brewTempC)}
                         </div>
@@ -284,22 +296,6 @@ export default function Fellow() {
               ) : (
                 <Empty title="No profiles on this machine yet" />
               )}
-            </section>
-          ) : null}
-
-          {raw ? (
-            <section className="card">
-              <div className="card-head">
-                <h2>Raw response</h2>
-                <button className="btn btn-ghost btn-sm" onClick={() => setRaw(null)}>
-                  Clear
-                </button>
-              </div>
-              <p className="small dim fellow-note">
-                The wire format is captured, but this is still the quickest way to see exactly what
-                the API returns for an account.
-              </p>
-              <pre className="code-block capped mono small">{JSON.stringify(raw, null, 2)}</pre>
             </section>
           ) : null}
         </>

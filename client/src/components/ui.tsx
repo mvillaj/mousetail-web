@@ -1,5 +1,5 @@
 import { cloneElement, isValidElement, useEffect, useId, useState, type ReactNode } from 'react';
-import { Star, X } from 'lucide-react';
+import { Star, X, type LucideIcon } from 'lucide-react';
 
 const LABELABLE = new Set(['input', 'select', 'textarea']);
 
@@ -109,12 +109,21 @@ export function Empty({ title, children }: { title: string; children?: ReactNode
 
 export function Banner({
   kind = 'info',
+  icon: Icon,
   children,
 }: {
-  kind?: 'info' | 'good' | 'bad';
+  kind?: 'info' | 'good' | 'bad' | 'warn';
+  /** A leading icon; the banner lays out as icon + text when one is given. */
+  icon?: LucideIcon;
   children: ReactNode;
 }) {
-  return <div className={`banner ${kind}`}>{children}</div>;
+  if (!Icon) return <div className={`banner ${kind}`}>{children}</div>;
+  return (
+    <div className={`banner ${kind} with-icon`}>
+      <Icon className="banner-icon" size={18} aria-hidden="true" />
+      <div>{children}</div>
+    </div>
+  );
 }
 
 export function Modal({

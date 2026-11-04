@@ -87,6 +87,12 @@ export function totalDurationS(p: Pick<Es1Profile, 'stages'>): number {
   return p.stages.reduce((sum, s) => sum + s.durationS, 0);
 }
 
+/** The highest pressure any stage reaches, in bar: the one number a list row can show. */
+export function peakPressureBar(p: Pick<Es1Profile, 'stages'>): number | null {
+  if (!p.stages.length) return null;
+  return Math.max(...p.stages.flatMap((s) => [s.pressureBar, s.endPressureBar]));
+}
+
 export function yieldG(p: Pick<Es1Profile, 'doseG' | 'ratio'>): number {
   return Math.round(p.doseG * p.ratio * 10) / 10;
 }
