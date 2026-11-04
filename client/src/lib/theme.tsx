@@ -43,6 +43,20 @@ export function storedFinish(): Finish {
 
 export function applyFinish(finish: Finish) {
   document.documentElement.dataset.finish = finish;
+  syncThemeColor();
+}
+
+/**
+ * Point the browser chrome (and an installed app's status and title bars) at
+ * the page's own ground, so they read as one surface in every theme and finish.
+ * The palette lives in CSS, so read the colour back rather than duplicating it.
+ */
+export function syncThemeColor() {
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (!meta || !document.body) return;
+  const bg = getComputedStyle(document.body).backgroundColor;
+  if (!bg || bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') return;
+  meta.content = bg;
 }
 
 export function systemTheme(): 'light' | 'dark' {
@@ -62,6 +76,7 @@ export function storedPref(): ThemePref {
 /** The attribute is always concrete, so the stylesheet needs one palette per theme. */
 export function applyTheme(pref: ThemePref) {
   document.documentElement.dataset.theme = pref === 'auto' ? systemTheme() : pref;
+  syncThemeColor();
 }
 
 interface ThemeState {
