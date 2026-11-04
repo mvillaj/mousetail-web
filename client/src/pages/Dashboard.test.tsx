@@ -77,11 +77,56 @@ describe('Dashboard first load', () => {
     expect(screen.queryByRole('heading', { name: 'Recent shots' })).toBeNull();
   });
 
+  it("holds the stats strip's place on a slow load, so Recent shots never drops", () => {
+    renderPage();
+    act(() => vi.advanceTimersByTime(LOADING_DELAY_MS));
+    const pending = document.querySelector('.dash-summary.is-pending');
+    expect(pending).toBeTruthy();
+    expect(pending?.getAttribute('aria-hidden')).toBe('true');
+    expect(screen.getByRole('region', { name: 'Dial-in progress' }).getAttribute('aria-busy')).toBe(
+      'true',
+    );
+  });
+
+  it('drops the stats placeholder once the shots say there is nothing to total', () => {
+    answers = { ...loaded };
+    delete answers['/shots/meta/stats'];
+    renderPage();
+    act(() => vi.advanceTimersByTime(LOADING_DELAY_MS));
+    expect(document.querySelector('.dash-summary.is-pending')).toBeNull();
+  });
+
+  it('keeps the stats placeholder while shots are in but their totals are not', () => {
+    answers = {
+      ...loaded,
+      '/shots?limit=200': [
+        {
+          id: 'shot_1',
+          coffeeId: null,
+          coffeeName: null,
+          brewedAt: new Date().toISOString(),
+          doseG: 18,
+          yieldG: 36,
+          shotTimeS: 28,
+          grindSetting: 12,
+          rating: 4,
+          tasteBalance: 0,
+          flavourNotes: [],
+        },
+      ],
+    };
+    delete answers['/shots/meta/stats'];
+    renderPage();
+    act(() => vi.advanceTimersByTime(LOADING_DELAY_MS));
+    expect(document.querySelector('.dash-summary.is-pending')).toBeTruthy();
+  });
+
   it('draws the cards at full size once everything is in', () => {
     answers = { ...loaded };
     renderPage();
     expect(screen.getByRole('heading', { name: 'Pull your first shot' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Recent shots' })).toBeTruthy();
     expect(screen.queryByText('Loading…')).toBeNull();
+    expect(document.querySelector('.dash-summary.is-pending')).toBeNull();
   });
 });
