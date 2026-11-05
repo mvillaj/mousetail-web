@@ -8,6 +8,12 @@
         "value": "cubic-bezier(0.3, 1.4, 0.5, 1)",
         "createdAt": "2026-10-12T00:11:31.385Z",
         "reason": "the wordmark's drop falls from the tail with a small overshoot (formerly the crema rising, concept 4 'The pull'); plays once on the sign-in hero only and is off under reduced motion"
+      },
+      {
+        "rule": "overused-font",
+        "value": "fraunces",
+        "createdAt": "2026-11-05T17:17:51.651Z",
+        "reason": "Claude: Fraunces is the established display face in DESIGN.md; fonts.css only self-hosts the existing choice, user asked to fix load flicker, not change type"
       }
     ]
   }

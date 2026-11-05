@@ -10,6 +10,7 @@ import {
   type Suggestion,
 } from '@brewlab/shared';
 import { useApi } from '../lib/api';
+import { DASHBOARD } from './dashboardRequests';
 import { useAuth } from '../lib/auth';
 import { useDelayPassed } from '../lib/delay';
 import { baristaLine, CONFIDENCE_LABEL } from '../lib/coach';
@@ -58,11 +59,11 @@ export default function Dashboard() {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const shots = useApi<Shot[]>('/shots?limit=200');
-  const stats = useApi<Stats>('/shots/meta/stats');
-  const coffees = useApi<Coffee[]>('/coffees');
-  const grinders = useApi<Grinder[]>('/grinders');
-  const profiles = useApi<BrewProfileRecord[]>('/profiles');
+  const shots = useApi<Shot[]>(DASHBOARD.shots);
+  const stats = useApi<Stats>(DASHBOARD.stats);
+  const coffees = useApi<Coffee[]>(DASHBOARD.coffees);
+  const grinders = useApi<Grinder[]>(DASHBOARD.grinders);
+  const profiles = useApi<BrewProfileRecord[]>(DASHBOARD.profiles);
 
   const [logging, setLogging] = useState(false);
   const [justSaved, setJustSaved] = useState<{ shot: Shot; suggestion: Suggestion } | null>(null);
