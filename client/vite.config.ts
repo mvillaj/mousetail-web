@@ -1,15 +1,93 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
+import { defineConfig, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // Shared with index.html, which cannot import it.
 const DESCRIPTION =
   'A shot log and dial-in coach for espresso at home, with pressure-profile editing for the Fellow Espresso Series 1.';
 
+/**
+ * The exact clerk-js build the installed @clerk/clerk-react asks for. Left to
+ * itself the provider loads `clerk-js@5`, which Clerk answers with an uncached
+ * redirect to the exact version: a network round trip on every launch before
+ * any of the app can draw. Naming the exact version
+ * skips the redirect, and that URL is immutable, so the service worker keeps it.
+ *
+ * Read from the package rather than written down, so upgrading Clerk can never
+ * leave the app loading an older clerk-js than the React SDK expects. If the
+ * layout of the package changes and it can't be found, the build says so and
+ * the provider falls back to its own default.
+ */
+function clerkJsVersion(): string {
+  try {
+    const require = createRequire(import.meta.url);
+    const react = dirname(require.resolve('@clerk/clerk-react/package.json'));
+    const runtime = join(
+      createRequireFrom(react).resolve('@clerk/shared/package.json'),
+      '../dist/runtime',
+    );
+    for (const file of readdirSync(runtime).filter((f) => /^versionSelector-.*\.mjs$/.test(f))) {
+      const match = /packageVersion = "(\d+\.\d+\.\d+)"/.exec(
+        readFileSync(join(runtime, file), 'utf8'),
+      );
+      if (match) return match[1];
+    }
+  } catch {
+    // Fall through to the warning.
+  }
+  console.warn('[mousetail] Could not find the clerk-js version; Clerk will pick its own.');
+  return '';
+}
+
+function createRequireFrom(dir: string) {
+  return createRequire(join(dir, 'package.json'));
+}
+
+/**
+ * Preload the latin face of each family. The fonts are only asked for once text
+ * that uses them is on screen, and the first text waits on Clerk, so without
+ * this the first frame draws in the fallback and swaps. Preloaded, they arrive
+ * during that wait. latin-ext is left to load on demand.
+ *
+ * Build only: the hashed file names exist once Rollup has emitted them, and in
+ * dev the fonts load straight from the source tree anyway.
+ */
+function preloadFonts(): Plugin {
+  const FACES = /\/assets\/fonts\/(fraunces|figtree|red-hat-mono)-latin\.woff2$/;
+  return {
+    name: 'mousetail:preload-fonts',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx) {
+        const files = Object.values(ctx.bundle ?? {}).filter(
+          (f) => f.type === 'asset' && f.originalFileNames.some((n) => FACES.test(n)),
+        );
+        return files.map((f) => ({
+          tag: 'link',
+          attrs: {
+            rel: 'preload',
+            href: `/${f.fileName}`,
+            as: 'font',
+            type: 'font/woff2',
+            crossorigin: '',
+          },
+          injectTo: 'head',
+        }));
+      },
+    },
+  };
+}
+
 export default defineConfig({
+  define: { __CLERK_JS_VERSION__: JSON.stringify(clerkJsVersion()) },
   plugins: [
     react(),
+    preloadFonts(),
     VitePWA({
       // Prompt, not auto: an update that reloads the page mid-way through a
       // shot form throws the shot away. UpdatePrompt offers the reload instead.
@@ -53,17 +131,15 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'google-fonts-css' },
-          },
-          {
-            urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
+            // clerk-js and the chunks it loads, from the exact-version path only
+            // (see clerkJsVersion). Those files never change, so the cached copy
+            // is always right and a launch never waits on downloading them.
+            urlPattern: ({ url }) => /^\/npm\/@clerk\/clerk-js@\d+\.\d+\.\d+\//.test(url.pathname),
             handler: 'CacheFirst',
             options: {
-              cacheName: 'google-fonts-files',
+              cacheName: 'clerk-js',
               cacheableResponse: { statuses: [0, 200] },
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 365 },
             },
           },
         ],

@@ -9,6 +9,7 @@ import { AuthProvider } from './lib/auth';
 import { MachineProvider } from './lib/machines';
 import { ThemeProvider, applyTheme, storedPref } from './lib/theme';
 import { AiProvider } from './lib/ai';
+import './styles/fonts.css';
 import './styles/app.css';
 
 // Before render, not in an effect: React runs child effects before the parent's,
@@ -42,6 +43,7 @@ function ClerkWithRouter({ children }: { children: ReactNode }) {
   return (
     <ClerkProvider
       publishableKey={publishableKey}
+      clerkJSVersion={__CLERK_JS_VERSION__ || undefined}
       afterSignOutUrl="/"
       routerPush={(to) => navigate(to)}
       routerReplace={(to) => navigate(to, { replace: true })}

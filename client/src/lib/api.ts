@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * Clerk holds the session, and its `getToken()` is async — so instead of reading
@@ -79,11 +79,69 @@ export async function api<T = unknown>(
   return data as T;
 }
 
-/** Minimal data hook: fetch on mount, expose a manual refresh. */
+/**
+ * Requests started ahead of the page that will want them, so they run
+ * alongside `/auth/me` instead of after it. In memory only, never persisted:
+ * nothing here outlives the tab, and sign-out drops it.
+ */
+interface Prefetched {
+  at: number;
+  promise: Promise<unknown>;
+  /** Filled in once the request settles, so a page can draw it on first render. */
+  settled?: { data: unknown } | { error: string };
+}
+
+const prefetched = new Map<string, Prefetched>();
+
+/** Older than this and a prefetch is not used: the page fetches fresh instead. */
+export const PREFETCH_TTL_MS = 10_000;
+
+export function prefetch(paths: readonly string[]) {
+  const now = Date.now();
+  for (const path of paths) {
+    const existing = prefetched.get(path);
+    if (existing && now - existing.at < PREFETCH_TTL_MS) continue;
+    const entry: Prefetched = { at: now, promise: api(path) };
+    entry.promise.then(
+      (data) => (entry.settled = { data }),
+      (e: Error) => (entry.settled = { error: e.message }),
+    );
+    prefetched.set(path, entry);
+  }
+}
+
+export function clearPrefetched() {
+  prefetched.clear();
+}
+
+function peekPrefetched(path: string | null): Prefetched | undefined {
+  if (!path) return undefined;
+  const entry = prefetched.get(path);
+  if (entry && Date.now() - entry.at < PREFETCH_TTL_MS) return entry;
+  if (entry) prefetched.delete(path);
+  return undefined;
+}
+
+/** One use per prefetch: after the first load, a reload asks the server again. */
+function takePrefetched(path: string): Prefetched | undefined {
+  const entry = peekPrefetched(path);
+  prefetched.delete(path);
+  return entry;
+}
+
+const settledData = (entry: Prefetched | undefined) =>
+  entry?.settled && 'data' in entry.settled ? entry.settled.data : null;
+
+/**
+ * Minimal data hook: fetch on mount, expose a manual refresh. A prefetch of the
+ * same path is used for the first load, and one that has already landed is on
+ * screen from the first render.
+ */
 export function useApi<T>(path: string | null, deps: unknown[] = []) {
-  const [data, setData] = useState<T | null>(null);
+  const [data, setData] = useState<T | null>(() => settledData(peekPrefetched(path)) as T | null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(Boolean(path));
+  const [loading, setLoading] = useState(() => Boolean(path) && data == null);
+  const first = useRef(true);
 
   const reload = useCallback(async () => {
     if (!path) {
@@ -91,9 +149,22 @@ export function useApi<T>(path: string | null, deps: unknown[] = []) {
       setLoading(false);
       return;
     }
+    const ahead = first.current ? takePrefetched(path) : undefined;
+    first.current = false;
+    if (ahead?.settled) {
+      // Already landed: on screen from the first render, so no loading flicker.
+      if ('data' in ahead.settled) {
+        setData(ahead.settled.data as T);
+        setError(null);
+      } else {
+        setError(ahead.settled.error);
+      }
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      setData(await api<T>(path));
+      setData((await (ahead?.promise ?? api<T>(path))) as T);
       setError(null);
     } catch (e) {
       setError((e as Error).message);

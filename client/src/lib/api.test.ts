@@ -1,5 +1,14 @@
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { api, ApiError, setTokenGetter } from './api';
+import {
+  api,
+  ApiError,
+  clearPrefetched,
+  prefetch,
+  PREFETCH_TTL_MS,
+  setTokenGetter,
+  useApi,
+} from './api';
 
 const respond = (status: number, body?: unknown) =>
   new Response(body === undefined ? null : JSON.stringify(body), { status });
@@ -74,5 +83,83 @@ describe('api', () => {
   it('falls back to a generic message when the error body is empty', async () => {
     mockFetch(respond(500));
     await expect(api('/shots')).rejects.toThrow('Request failed (500)');
+  });
+});
+
+// Requests started alongside /auth/me, so the dashboard isn't one round trip
+// behind the shell.
+describe('prefetch', () => {
+  /** A fresh Response per call: a body can only be read once. */
+  function serve(initial: unknown) {
+    const state = { body: initial };
+    const fn = vi.fn(async () => respond(200, state.body));
+    vi.stubGlobal('fetch', fn);
+    return Object.assign(fn, { answer: (b: unknown) => (state.body = b) });
+  }
+
+  afterEach(() => {
+    clearPrefetched();
+    vi.useRealTimers();
+  });
+
+  it('hands a page the prefetched answer for its first load, without asking again', async () => {
+    const fetch = serve([{ id: 'shot_1' }]);
+    prefetch(['/shots']);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    // Let the response settle so the first render can use it.
+    await new Promise((r) => setTimeout(r, 0));
+
+    const { result } = renderHook(() => useApi<{ id: string }[]>('/shots'));
+    expect(result.current.data).toEqual([{ id: 'shot_1' }]);
+    expect(result.current.loading).toBe(false);
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits on a prefetch still in flight rather than sending a second request', async () => {
+    let answer!: (r: Response) => void;
+    const fetch = vi.fn(() => new Promise<Response>((r) => (answer = r)));
+    vi.stubGlobal('fetch', fetch);
+    prefetch(['/shots']);
+
+    const { result } = renderHook(() => useApi<number[]>('/shots'));
+    expect(result.current.data).toBeNull();
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    answer(respond(200, [1]));
+    await waitFor(() => expect(result.current.data).toEqual([1]));
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses a prefetch once: a reload asks the server again', async () => {
+    const fetch = serve([1]);
+    prefetch(['/shots']);
+    const { result } = renderHook(() => useApi<number[]>('/shots'));
+    await waitFor(() => expect(result.current.data).toEqual([1]));
+    fetch.answer([1, 2]);
+    await act(() => result.current.reload());
+    expect(result.current.data).toEqual([1, 2]);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignores a prefetch that has gone stale', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const fetch = serve(['old']);
+    prefetch(['/shots']);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    vi.setSystemTime(Date.now() + PREFETCH_TTL_MS + 1);
+    fetch.answer(['new']);
+    const { result } = renderHook(() => useApi<string[]>('/shots'));
+    await waitFor(() => expect(result.current.data).toEqual(['new']));
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('drops everything on clear, so the next account never sees the last one’s answers', async () => {
+    const fetch = serve(['theirs']);
+    prefetch(['/shots']);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    clearPrefetched();
+    fetch.answer(['mine']);
+    const { result } = renderHook(() => useApi<string[]>('/shots'));
+    await waitFor(() => expect(result.current.data).toEqual(['mine']));
   });
 });
