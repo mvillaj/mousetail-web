@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Coffee, TriangleAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
+  FELLOW_SESSION_EXPIRED,
   peakPressureBar,
   type Es1Profile,
   type FellowConnectionStatus,
   type FellowDevice,
   type ProfileOrigin,
 } from '@brewlab/shared';
-import { api, useApi } from '../lib/api';
+import { api, ApiError, useApi } from '../lib/api';
 import { Banner, Empty, Field } from '../components/ui';
 import { EspressoMachineIcon } from '../components/EspressoMachineIcon';
 import { fmt, tempF } from '../lib/format';
@@ -89,6 +90,70 @@ export function OptInGate({ onEnabled }: { onEnabled: () => void }) {
   );
 }
 
+/** Fellow refused the stored token: the page should ask for the password again. */
+function isExpiredError(err: unknown): boolean {
+  return (
+    err instanceof ApiError &&
+    (err.body as { code?: unknown } | null)?.code === FELLOW_SESSION_EXPIRED
+  );
+}
+
+/**
+ * Fellow stopped taking the stored token. The account and its devices are
+ * still known, so this asks for the password alone, not a disconnect and a
+ * fresh sign-in.
+ */
+function ReconnectCard({ email, onReconnected }: { email: string; onReconnected: () => void }) {
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function reconnect(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await api('/fellow/connect', { method: 'POST', body: { email, password } });
+      setPassword('');
+      onReconnected();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2>Sign in again</h2>
+        <span className="tag">expired</span>
+      </div>
+      <p className="small dim">
+        Fellow ended the session for <span className="mono">{email}</span>. Enter your Fellow
+        password to pick up where you left off.
+      </p>
+      <form onSubmit={reconnect} className="stack fellow-form">
+        <Field label="Fellow password">
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </Field>
+        {error ? <Banner kind="bad">{error}</Banner> : null}
+        <div>
+          <button className="btn btn-primary" disabled={busy}>
+            {busy ? 'Signing in…' : 'Sign in'}
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+}
+
 /**
  * The line under a device name: the model when it says something the name does
  * not (a renamed machine), and the firmware. Fellow's ids mean nothing to a user.
@@ -145,6 +210,10 @@ export default function Fellow() {
       const list = await api<RemoteProfile[]>(`/fellow/devices/${deviceId}/profiles/parsed`);
       setRemote({ deviceId, list });
     } catch (err) {
+      if (isExpiredError(err)) {
+        void status.reload();
+        return;
+      }
       setFlash((err as Error).message);
     }
   }
@@ -157,6 +226,11 @@ export default function Fellow() {
       });
       navigate(`/profiles/${saved.id}`);
     } catch (err) {
+      if (isExpiredError(err)) {
+        setRemote(null);
+        void status.reload();
+        return;
+      }
       setFlash((err as Error).message);
     } finally {
       setImporting(null);
@@ -190,6 +264,15 @@ export default function Fellow() {
 
       {!s?.optedIn ? null : s.connected ? (
         <>
+          {s.expired && s.email ? (
+            <ReconnectCard
+              email={s.email}
+              onReconnected={() => {
+                setFlash(null);
+                void status.reload();
+              }}
+            />
+          ) : null}
           <section className="card">
             <div className="card-head">
               <div>
@@ -227,7 +310,7 @@ export default function Fellow() {
                       </div>
                     </div>
                     <div className="fellow-row-actions">
-                      {d.supportsEspressoProfiles ? (
+                      {d.supportsEspressoProfiles && !s.expired ? (
                         <button className="btn btn-sm" onClick={() => loadProfiles(d.id)}>
                           Profiles on this machine
                         </button>

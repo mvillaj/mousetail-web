@@ -13,6 +13,8 @@ export interface PushResult {
   /** Raw response body, surfaced in the UI so you can see exactly what Fellow returned. */
   raw?: unknown;
   message: string;
+  /** Fellow refused the session token (401): the user has to sign in again. */
+  sessionExpired?: boolean;
 }
 
 /**

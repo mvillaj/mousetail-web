@@ -469,8 +469,25 @@ function explainFailure(
     );
   }
   if (deviceMissing) return `Fellow does not recognise device ${deviceId}.`;
-  if (err.status === 401) return 'Fellow rejected the session token — reconnect the account.';
+  if (isSessionExpired(err)) return SESSION_EXPIRED_MESSAGE;
   return `Fellow rejected the profile (${err.status}): ${fellowReason(err.body) ?? err.message}`;
+}
+
+/**
+ * What the user reads when Fellow stops taking the stored token. It names the
+ * one fix, which needs only their password: the connection itself is kept.
+ */
+export const SESSION_EXPIRED_MESSAGE =
+  'Your Fellow sign-in has expired. Enter your Fellow password on the Fellow page to reconnect.';
+
+/**
+ * Fellow refused the stored token. Fellow's tokens expire, and there is no
+ * refresh call we know of: both reverse-engineered clients log in again with the
+ * password, which this app deliberately does not keep. So a 401 ends the session
+ * and the user signs in again.
+ */
+export function isSessionExpired(err: unknown): boolean {
+  return (err as { status?: unknown } | null)?.status === 401;
 }
 
 /**
@@ -487,8 +504,9 @@ function fellowReason(body: unknown): string | null {
 export const liveFellowClient: FellowClient = {
   async login(email, password): Promise<FellowSession> {
     // Fellow also returns a refreshToken. It is deliberately dropped on the
-    // floor: nothing here ever called a refresh endpoint with it, so persisting
-    // it only widened what a leaked database would give away.
+    // floor: no refresh endpoint is known (both reverse-engineered clients just
+    // log in again), so persisting it only widened what a leaked database would
+    // give away. An expired token is handled by asking for the password again.
     const body = await request<{ accessToken: string }>(API.login, {
       method: 'POST',
       body: JSON.stringify({ email, password }),
@@ -525,7 +543,12 @@ export const liveFellowClient: FellowClient = {
       };
     } catch (err) {
       const e = err as Error & { status?: number; body?: unknown };
-      return { ok: false, raw: e.body ?? String(e), message: explainFailure(e, deviceId) };
+      return {
+        ok: false,
+        raw: e.body ?? String(e),
+        message: explainFailure(e, deviceId),
+        sessionExpired: isSessionExpired(e),
+      };
     }
   },
 
@@ -563,6 +586,7 @@ export const liveFellowClient: FellowClient = {
         ok: false,
         raw: e.body ?? String(e),
         message: explainFailure(e, deviceId),
+        sessionExpired: isSessionExpired(e),
       };
     }
   },

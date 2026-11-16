@@ -4,9 +4,11 @@ import {
   describePayloadLoss,
   fromEs1Wire,
   isEditable,
+  isSessionExpired,
   liveFellowClient,
   preservedFrom,
   profileOrigin,
+  SESSION_EXPIRED_MESSAGE,
   toEs1Payload,
 } from './live.ts';
 import type { Es1WireProfileRead } from './live.ts';
@@ -269,4 +271,40 @@ test('every Fellow request is bounded in time', async (t) => {
   await liveFellowClient.listProfiles(SESSION, 'FS_1');
   const init = fetch.mock.calls[0].arguments[1] as RequestInit;
   assert.ok(init.signal instanceof AbortSignal);
+});
+
+test('a refused token is reported as an expired session on push and update', async (t) => {
+  const fetch = fellowAnswers(401, { message: 'Unauthorized', statusCode: 401 });
+  t.after(() => fetch.mock.restore());
+
+  const pushed = await liveFellowClient.pushProfile(SESSION, 'FS_1', fromEs1Wire(CUSTOM));
+  assert.equal(pushed.ok, false);
+  assert.equal(pushed.sessionExpired, true);
+  assert.equal(pushed.message, SESSION_EXPIRED_MESSAGE);
+
+  const updated = await liveFellowClient.updateProfile(
+    SESSION,
+    'FS_1',
+    CUSTOM.id,
+    fromEs1Wire(CUSTOM),
+  );
+  assert.equal(updated.sessionExpired, true);
+});
+
+test('any other rejection is not mistaken for an expired session', async (t) => {
+  const fetch = fellowAnswers(400, REJECTED);
+  t.after(() => fetch.mock.restore());
+
+  const result = await liveFellowClient.pushProfile(SESSION, 'FS_1', fromEs1Wire(CUSTOM));
+  assert.equal(result.sessionExpired, false);
+});
+
+test('a 401 from a read carries the status the routes key off', async (t) => {
+  const fetch = fellowAnswers(401, { message: 'Unauthorized' });
+  t.after(() => fetch.mock.restore());
+
+  const err = await liveFellowClient.listProfiles(SESSION, 'FS_1').catch((e) => e);
+  assert.equal(isSessionExpired(err), true);
+  assert.equal(isSessionExpired(new Error('fetch failed')), false);
+  assert.equal(isSessionExpired(null), false);
 });

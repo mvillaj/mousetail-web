@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Sparkles, X } from 'lucide-react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
+  FELLOW_SESSION_EXPIRED,
   ES1_LIMITS,
   RANGE_NOTES,
   buildStages,
@@ -38,6 +39,8 @@ interface PushResult {
   ok: boolean;
   message: string;
   warnings?: string[];
+  /** FELLOW_SESSION_EXPIRED when Fellow refused the stored token. */
+  code?: string;
 }
 
 export default function ProfileEditor() {
@@ -628,6 +631,13 @@ export default function ProfileEditor() {
         >
           <div className="stack">
             <Banner kind={pushResult.ok ? 'good' : 'bad'}>{pushResult.message}</Banner>
+            {pushResult.code === FELLOW_SESSION_EXPIRED ? (
+              <div>
+                <Link className="btn btn-primary" to="/fellow">
+                  Sign in to Fellow again
+                </Link>
+              </div>
+            ) : null}
             {pushResult.warnings?.length ? (
               <Banner kind="info">
                 <strong>What the machine will not have received:</strong>
