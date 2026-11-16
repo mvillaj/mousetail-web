@@ -748,7 +748,7 @@ function Splash() {
         </Link>
       </header>
       <div className="splash-copy">
-        <h1>Bitter? Sour? Chase the mouse tail.</h1>
+        <h1>Bitter one day, sour the next? Find the mouse tail.</h1>
         <p>
           Shot log, dial-in coach and profile studio for the Fellow Espresso Series&nbsp;1. One
           change at a time, until your shot pours like this.
@@ -776,8 +776,8 @@ export default function Landing() {
             <p className="lead">
               This is Modern Arc, one of the ES1’s factory profiles, from first drip to glass.
               Mousetail builds profiles like it, logs every shot with the setting that made it, and
-              hands back the one change to make next. The log and coach work with any espresso
-              machine.
+              hands back the one change to make next. Not a Fellow user? No problem - the log and
+              coach work with any espresso machine.
             </p>
           </div>
           <HeroPull />
@@ -842,7 +842,7 @@ export default function Landing() {
         <section className="close">
           <YieldMark />
           <BrandLockup />
-          <p>Your next shot is the one to log.</p>
+          <p>Pull a shot. Log it. Pull a better one.</p>
           <Ctas />
         </section>
 
