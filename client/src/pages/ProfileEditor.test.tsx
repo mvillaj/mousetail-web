@@ -2,6 +2,7 @@ import { act, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  FELLOW_SESSION_EXPIRED,
   STOCK_PROFILES,
   roundF,
   totalDurationS,
@@ -158,5 +159,34 @@ describe('Sending to Fellow', () => {
     expect(within(dialog).getByText(rejected.message)).toBeInTheDocument();
     expect(within(dialog).queryByText(/"statusCode"/)).not.toBeInTheDocument();
     expect(within(dialog).queryByText(/raw response/i)).not.toBeInTheDocument();
+  });
+
+  it('offers the way back to the Fellow page when the sign-in has expired', async () => {
+    const expired = {
+      ok: false,
+      message:
+        'Your Fellow sign-in has expired. Enter your Fellow password on the Fellow page to reconnect.',
+      error: 'Your Fellow sign-in has expired.',
+      code: FELLOW_SESSION_EXPIRED,
+      warnings: [],
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url === '/api/fellow/status') return json(200, { optedIn: true });
+        if (url === '/api/fellow/push/prf_lever') return json(424, expired);
+        return json(200, record('prf_lever', 'Lever'));
+      }),
+    );
+    renderAt('/profiles/prf_lever');
+
+    const send = await screen.findByRole('button', { name: 'Send to Fellow' });
+    await act(async () => send.click());
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('link', { name: /sign in to fellow again/i })).toHaveAttribute(
+      'href',
+      '/fellow',
+    );
   });
 });

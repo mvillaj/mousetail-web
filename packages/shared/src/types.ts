@@ -157,10 +157,21 @@ export interface FellowConnectionStatus {
    */
   optedIn: boolean;
   connected: boolean;
+  /**
+   * Connected, but Fellow has stopped accepting the stored token. The email and
+   * devices are kept, so the page can ask for the password alone.
+   */
+  expired?: boolean;
   email?: string;
   devices: FellowDevice[];
   warning?: string;
 }
+
+/**
+ * The `code` on a Fellow route's error when Fellow refused the stored token.
+ * The client keys off this, not the message, to offer the sign-in again.
+ */
+export const FELLOW_SESSION_EXPIRED = 'fellow_session_expired';
 
 export type ChangeKind = 'new' | 'improved' | 'fixed';
 

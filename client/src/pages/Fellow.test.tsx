@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { makeStage, type FellowConnectionStatus } from '@brewlab/shared';
+import { FELLOW_SESSION_EXPIRED, makeStage, type FellowConnectionStatus } from '@brewlab/shared';
 import Fellow from './Fellow';
 
 const json = (status: number, body?: unknown) =>
@@ -172,5 +172,84 @@ describe('Fellow page', () => {
     const row = name.closest('.fellow-row') as HTMLElement;
     expect(row).toHaveTextContent('2 stages · 9 bar peak');
     expect(row).not.toHaveTextContent('remote_abc123');
+  });
+
+  describe('when Fellow ends the session', () => {
+    const ES1 = {
+      id: 'FS_97b70d6f',
+      displayName: 'Kitchen ES1',
+      model: 'Espresso Series 1',
+      family: 'espresso' as const,
+      supportsEspressoProfiles: true,
+    };
+    const connected: FellowConnectionStatus = {
+      optedIn: true,
+      connected: true,
+      email: 'me@example.com',
+      devices: [ES1],
+    };
+
+    /** Fellow refuses the token on the next read; a password sign-in brings it back. */
+    function expiringServer(initial: FellowConnectionStatus) {
+      let status = initial;
+      const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+        if (url === '/api/fellow/status') return json(200, status);
+        if (url.endsWith('/profiles/parsed')) {
+          status = { ...status, expired: true };
+          return json(424, {
+            error: 'Your Fellow sign-in has expired.',
+            code: FELLOW_SESSION_EXPIRED,
+          });
+        }
+        if (url === '/api/fellow/connect' && init?.method === 'POST') {
+          status = { ...connected, expired: undefined };
+          return json(200, status);
+        }
+        return json(404, { error: `unexpected ${url}` });
+      });
+      vi.stubGlobal('fetch', fetch);
+      return fetch;
+    }
+
+    it('asks for the password alone, keeping the account and its devices', async () => {
+      expiringServer({ ...connected, expired: true });
+      renderPage();
+
+      expect(await screen.findByRole('heading', { name: 'Sign in again' })).toBeInTheDocument();
+      expect(screen.getByLabelText(/fellow password/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/fellow email/i)).not.toBeInTheDocument();
+      expect(screen.getByText('Kitchen ES1')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /profiles on this machine/i })).toBeNull();
+    });
+
+    it('signs back in with the stored email and drops the prompt', async () => {
+      const fetch = expiringServer({ ...connected, expired: true });
+      renderPage();
+
+      fireEvent.change(await screen.findByLabelText(/fellow password/i), {
+        target: { value: 'hunter2' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
+
+      await waitFor(() =>
+        expect(screen.queryByRole('heading', { name: 'Sign in again' })).not.toBeInTheDocument(),
+      );
+      const call = fetch.mock.calls.find(([url]) => url === '/api/fellow/connect');
+      expect(JSON.parse(String(call?.[1]?.body))).toEqual({
+        email: 'me@example.com',
+        password: 'hunter2',
+      });
+      expect(screen.getByRole('button', { name: /profiles on this machine/i })).toBeInTheDocument();
+    });
+
+    it('turns a refused read into the sign-in prompt rather than an error', async () => {
+      expiringServer(connected);
+      renderPage();
+
+      fireEvent.click(await screen.findByRole('button', { name: /profiles on this machine/i }));
+
+      expect(await screen.findByRole('heading', { name: 'Sign in again' })).toBeInTheDocument();
+      expect(screen.queryByText('Your Fellow sign-in has expired.')).not.toBeInTheDocument();
+    });
   });
 });

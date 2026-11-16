@@ -1,5 +1,6 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import {
+  FELLOW_SESSION_EXPIRED,
   fellowConnectSchema,
   fellowOptInSchema,
   type FellowConnectionStatus,
@@ -17,6 +18,8 @@ import {
   preservedFrom,
   profileOrigin,
   describePayloadLoss,
+  isSessionExpired,
+  SESSION_EXPIRED_MESSAGE,
   type Es1WireProfileRead,
 } from '../fellow/live';
 import { id } from '../lib/db';
@@ -39,7 +42,56 @@ function loadConnection(userId: string) {
     return null;
   }
   const session: FellowSession = { email: row.email, accessToken };
-  return { row, session, devices: jsonCol(row.devices, [] as any[]) };
+  return {
+    row,
+    session,
+    devices: jsonCol(row.devices, [] as any[]),
+    expired: Boolean(row.expired_at),
+  };
+}
+
+/**
+ * Fellow stopped taking the stored token. The row stays, so the page can ask
+ * for the password alone; only the first 401 is timestamped.
+ */
+function markExpired(userId: string) {
+  db.prepare(
+    'UPDATE fellow_connections SET expired_at = COALESCE(expired_at, ?) WHERE user_id = ?',
+  ).run(nowIso(), userId);
+}
+
+function sendExpired(res: Response) {
+  res
+    .status(UPSTREAM_FAILED)
+    .json({ error: SESSION_EXPIRED_MESSAGE, code: FELLOW_SESSION_EXPIRED });
+}
+
+/**
+ * The connection every Fellow-calling route needs. Answers for itself, and
+ * returns null, when there is none or its token is already known to be dead:
+ * no point sending Fellow a token it has refused.
+ */
+function requireConnection(userId: string, res: Response) {
+  const conn = loadConnection(userId);
+  if (!conn) {
+    res.status(400).json({ error: 'Connect a Fellow account first' });
+    return null;
+  }
+  if (conn.expired) {
+    sendExpired(res);
+    return null;
+  }
+  return conn;
+}
+
+/** A Fellow call failed: a refused token ends the session, anything else is passed on. */
+function sendFellowFailure(userId: string, res: Response, err: unknown) {
+  if (isSessionExpired(err)) {
+    markExpired(userId);
+    sendExpired(res);
+    return;
+  }
+  res.status(UPSTREAM_FAILED).json({ error: (err as Error).message });
 }
 
 function optedIn(userId: string): boolean {
@@ -69,6 +121,7 @@ fellowRouter.get('/status', (req: AuthedRequest, res) => {
     ? {
         optedIn: true,
         connected: true,
+        ...(conn.expired ? { expired: true } : {}),
         email: conn.row.email,
         devices: conn.devices,
         warning: WARNING,
@@ -135,11 +188,12 @@ fellowRouter.post('/connect', fellowConnectLimiter, async (req: AuthedRequest, r
   }
   try {
     db.prepare(
-      `INSERT INTO fellow_connections (user_id, mode, email, access_token, devices, connected_at)
-       VALUES (?, ?, ?, ?, ?, ?)
+      `INSERT INTO fellow_connections
+         (user_id, mode, email, access_token, devices, connected_at, expired_at)
+       VALUES (?, ?, ?, ?, ?, ?, NULL)
        ON CONFLICT(user_id) DO UPDATE SET mode=excluded.mode, email=excluded.email,
          access_token=excluded.access_token, devices=excluded.devices,
-         connected_at=excluded.connected_at`,
+         connected_at=excluded.connected_at, expired_at=NULL`,
     ).run(
       req.userId!,
       'live',
@@ -164,15 +218,12 @@ fellowRouter.post('/connect', fellowConnectLimiter, async (req: AuthedRequest, r
 
 /** Raw device dump — the fastest way to learn what fields the API really returns. */
 fellowRouter.get('/devices/:deviceId/profiles', async (req: AuthedRequest, res) => {
-  const conn = loadConnection(req.userId!);
-  if (!conn) {
-    res.status(400).json({ error: 'Connect a Fellow account first' });
-    return;
-  }
+  const conn = requireConnection(req.userId!, res);
+  if (!conn) return;
   try {
     res.json(await getFellowClient().listProfiles(conn.session, req.params.deviceId));
   } catch (err) {
-    res.status(UPSTREAM_FAILED).json({ error: (err as Error).message });
+    sendFellowFailure(req.userId!, res, err);
   }
 });
 
@@ -182,11 +233,8 @@ fellowRouter.get('/devices/:deviceId/profiles', async (req: AuthedRequest, res) 
  * is still the fastest way to see what the API actually returns.
  */
 fellowRouter.get('/devices/:deviceId/profiles/parsed', async (req: AuthedRequest, res) => {
-  const conn = loadConnection(req.userId!);
-  if (!conn) {
-    res.status(400).json({ error: 'Connect a Fellow account first' });
-    return;
-  }
+  const conn = requireConnection(req.userId!, res);
+  if (!conn) return;
   try {
     const raw = (await getFellowClient().listProfiles(
       conn.session,
@@ -207,17 +255,14 @@ fellowRouter.get('/devices/:deviceId/profiles/parsed', async (req: AuthedRequest
         }),
     );
   } catch (err) {
-    res.status(UPSTREAM_FAILED).json({ error: (err as Error).message });
+    sendFellowFailure(req.userId!, res, err);
   }
 });
 
 /** Copy a profile off the machine onto the local shelf, origin intact. */
 fellowRouter.post('/import/:deviceId/:remoteId', async (req: AuthedRequest, res) => {
-  const conn = loadConnection(req.userId!);
-  if (!conn) {
-    res.status(400).json({ error: 'Connect a Fellow account first' });
-    return;
-  }
+  const conn = requireConnection(req.userId!, res);
+  if (!conn) return;
   let wire: Es1WireProfileRead | undefined;
   try {
     const raw = (await getFellowClient().listProfiles(
@@ -226,7 +271,7 @@ fellowRouter.post('/import/:deviceId/:remoteId', async (req: AuthedRequest, res)
     )) as Es1WireProfileRead[];
     wire = raw.find((w) => w && String(w.id) === req.params.remoteId);
   } catch (err) {
-    res.status(UPSTREAM_FAILED).json({ error: (err as Error).message });
+    sendFellowFailure(req.userId!, res, err);
     return;
   }
   if (!wire) {
@@ -262,11 +307,8 @@ fellowRouter.post('/import/:deviceId/:remoteId', async (req: AuthedRequest, res)
 });
 
 fellowRouter.post('/push/:profileId', async (req: AuthedRequest, res) => {
-  const conn = loadConnection(req.userId!);
-  if (!conn) {
-    res.status(400).json({ error: 'Connect a Fellow account first' });
-    return;
-  }
+  const conn = requireConnection(req.userId!, res);
+  if (!conn) return;
   const row = db
     .prepare('SELECT * FROM brew_profiles WHERE id = ? AND user_id = ?')
     .get(req.params.profileId, req.userId!) as any;
@@ -323,6 +365,8 @@ fellowRouter.post('/push/:profileId', async (req: AuthedRequest, res) => {
          SET sync_state='pushed', fellow_profile_id=?, last_pushed_at=?, origin=?, source_device_id=?
        WHERE id=?`,
     ).run(result.fellowProfileId ?? null, nowIso(), nextOrigin, deviceId, record.id);
+  } else if (result.sessionExpired) {
+    markExpired(req.userId!);
   } else {
     // The only place Fellow's reason is kept once the response has gone.
     console.warn(`Fellow push failed for ${record.id} on ${deviceId}:`, result.message, result.raw);
@@ -332,6 +376,7 @@ fellowRouter.post('/push/:profileId', async (req: AuthedRequest, res) => {
   res.status(result.ok ? 200 : UPSTREAM_FAILED).json({
     ...result,
     ...(result.ok ? {} : { error: result.message }),
+    ...(result.sessionExpired ? { code: FELLOW_SESSION_EXPIRED } : {}),
     warnings: describePayloadLoss(record.profile),
   });
 });
