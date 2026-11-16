@@ -56,7 +56,7 @@ describe('Landing', () => {
     const webp = photo.closest('picture')!.querySelector('source[type="image/webp"]');
     expect(webp).toHaveAttribute('srcset', expect.stringContaining('.webp 2000w'));
     expect(within(splash).getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Bitter? Sour? Chase the mouse tail.',
+      'Bitter one day, sour the next? Find the mouse tail.',
     );
     // The splash says what the app is for, and names the machine.
     expect(splash).toHaveTextContent(/profile studio for the Fellow Espresso Series\s1/);
