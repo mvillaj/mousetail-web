@@ -27,6 +27,13 @@ export interface Suggestion {
   confidence: 'low' | 'medium' | 'high';
 }
 
+/** A coffee counts as dialed in once this many shots have each rated at least this well. */
+export const DIALED_IN_MIN_SHOTS = 3;
+export const DIALED_IN_MIN_RATING = 4;
+
+export const isDialedIn = (wellRatedShots: number | null | undefined) =>
+  (wellRatedShots ?? 0) >= DIALED_IN_MIN_SHOTS;
+
 export const ratioOf = (s: ShotLike) => s.yieldG / s.doseG;
 /** Grams of liquid per second, excluding pre-infusion. */
 export const flowRate = (s: ShotLike) =>

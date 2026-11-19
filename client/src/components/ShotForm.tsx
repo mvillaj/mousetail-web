@@ -12,7 +12,8 @@ import {
 } from '@brewlab/shared';
 import { api } from '../lib/api';
 import { useMachines } from '../lib/machines';
-import { Banner, Field, RatingInput } from './ui';
+import { Banner, Field, ModalHeaderSlot, RatingInput, Segmented } from './ui';
+import ShotFormSimple from './ShotFormSimple';
 import { TASTE_LABELS, fToC, roundF } from '../lib/format';
 
 interface Props {
@@ -26,7 +27,7 @@ interface Props {
   onSaved: (shot: Shot, suggestion: Suggestion) => void;
 }
 
-export default function ShotForm({
+function ShotFormDetailed({
   coffees,
   grinders,
   profiles,
@@ -292,5 +293,71 @@ export default function ShotForm({
         </button>
       </div>
     </form>
+  );
+}
+
+type Mode = 'simple' | 'detailed';
+const MODE_KEY = 'brewlab.shotFormMode';
+
+function storedMode(): Mode {
+  try {
+    return localStorage.getItem(MODE_KEY) === 'detailed' ? 'detailed' : 'simple';
+  } catch {
+    return 'simple';
+  }
+}
+
+/**
+ * The shot log has two faces. A machine that runs a profile (the ES1) already
+ * knows its dose, yield, temperature and timing, so it gets a short, big-button
+ * form by default; everything else, and anyone who prefers the numbers, gets the
+ * full form.
+ */
+export default function ShotForm(props: Props) {
+  const { machines, active } = useMachines();
+  const [mode, setMode] = useState<Mode>(storedMode);
+  const machine = machines.find((m) => m.id === props.basedOn?.machineId) ?? active;
+
+  if (!machine || machine.capabilities.profiling !== 'pressure') {
+    return <ShotFormDetailed {...props} />;
+  }
+
+  function choose(next: Mode) {
+    setMode(next);
+    try {
+      localStorage.setItem(MODE_KEY, next);
+    } catch {
+      // Private mode: the choice just lasts until the form closes.
+    }
+  }
+
+  return (
+    <div className="stack">
+      <ModalHeaderSlot>
+        <div className="shot-mode">
+          <Segmented
+            options={[
+              { value: 'simple', label: 'Simple' },
+              { value: 'detailed', label: 'Detailed' },
+            ]}
+            value={mode}
+            onChange={choose}
+          />
+        </div>
+      </ModalHeaderSlot>
+      {mode === 'simple' ? (
+        <ShotFormSimple
+          machine={machine}
+          coffees={props.coffees}
+          grinders={props.grinders}
+          profiles={props.profiles}
+          defaultCoffeeId={props.defaultCoffeeId}
+          basedOn={props.basedOn}
+          onSaved={props.onSaved}
+        />
+      ) : (
+        <ShotFormDetailed {...props} />
+      )}
+    </div>
   );
 }

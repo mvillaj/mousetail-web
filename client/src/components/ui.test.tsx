@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { Field, Modal, RatingInput, Stars, Working } from './ui';
+import { Confidence, Field, Modal, ModalHeaderSlot, RatingInput, Stars, Working } from './ui';
 
 describe('Field', () => {
   it('ties the label to its input', () => {
@@ -96,6 +96,41 @@ describe('Modal', () => {
     );
     await userEvent.click(screen.getByText('body'));
     expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+describe('ModalHeaderSlot', () => {
+  it('puts its content in the modal header, beside the close button', () => {
+    render(
+      <Modal title="Log" onClose={() => {}}>
+        <ModalHeaderSlot>
+          <button>Mode</button>
+        </ModalHeaderSlot>
+        <p>body</p>
+      </Modal>,
+    );
+    const header = screen.getByRole('heading', { name: 'Log' }).parentElement!;
+    expect(header).toContainElement(screen.getByRole('button', { name: 'Mode' }));
+    expect(header).not.toContainElement(screen.getByText('body'));
+  });
+
+  it('renders in place when there is no modal', () => {
+    render(
+      <ModalHeaderSlot>
+        <button>Mode</button>
+      </ModalHeaderSlot>,
+    );
+    expect(screen.getByRole('button', { name: 'Mode' })).toBeInTheDocument();
+  });
+});
+
+describe('Confidence', () => {
+  it('pairs each level with its words and an icon', () => {
+    const { container, rerender } = render(<Confidence level="high" />);
+    expect(screen.getByText('Confident')).toBeInTheDocument();
+    expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    rerender(<Confidence level="low" />);
+    expect(screen.getByText('A guess until you taste it')).toBeInTheDocument();
   });
 });
 

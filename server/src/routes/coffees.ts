@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { coffeeInputSchema } from '@brewlab/shared';
+import { DIALED_IN_MIN_RATING, coffeeInputSchema } from '@brewlab/shared';
 import { bool, db, id, nowIso } from '../lib/db';
 import { optionalAuth, requireAuth, type AuthedRequest } from '../lib/auth';
 import { required, toCoffee } from '../lib/rows';
@@ -10,6 +10,7 @@ const SELECT = `
   SELECT c.*, u.display_name AS owner_name,
          (SELECT COUNT(*) FROM shots s WHERE s.coffee_id = c.id) AS shot_count,
          (SELECT ROUND(AVG(s.rating), 2) FROM shots s WHERE s.coffee_id = c.id AND s.rating IS NOT NULL) AS avg_rating,
+         (SELECT COUNT(*) FROM shots s WHERE s.coffee_id = c.id AND s.rating >= ${DIALED_IN_MIN_RATING}) AS well_rated_count,
          (SELECT COUNT(*) FROM coffees k WHERE k.cloned_from_id = c.id) AS clone_count
   FROM coffees c JOIN users u ON u.id = c.owner_id
 `;

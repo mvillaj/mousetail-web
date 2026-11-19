@@ -72,6 +72,8 @@ export interface Coffee {
   /** Aggregates, present on list/detail reads. */
   shotCount?: number;
   avgRating?: number | null;
+  /** Shots rated DIALED_IN_MIN_RATING or higher; see isDialedIn. */
+  wellRatedShotCount?: number;
   cloneCount?: number;
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Plus } from 'lucide-react';
+import { ArrowRight, Coffee as CoffeeIcon, Plus } from 'lucide-react';
 import {
   suggestNextShot,
   type BrewProfileRecord,
@@ -13,8 +13,8 @@ import { useApi } from '../lib/api';
 import { DASHBOARD } from './dashboardRequests';
 import { useAuth } from '../lib/auth';
 import { useDelayPassed } from '../lib/delay';
-import { baristaLine, CONFIDENCE_LABEL } from '../lib/coach';
-import { Banner, Empty, Modal, Stars } from '../components/ui';
+import { baristaLine } from '../lib/coach';
+import { Banner, Confidence, Empty, Modal, Stars } from '../components/ui';
 import ShotForm from '../components/ShotForm';
 import ShotGlass, { tasteLabel } from '../components/ShotGlass';
 import { fmt, relativeDate } from '../lib/format';
@@ -193,10 +193,11 @@ export default function Dashboard() {
                   </button>
                   {latest.coffeeId ? (
                     <Link className="btn btn-ghost" to={`/coffees/${latest.coffeeId}`}>
+                      <CoffeeIcon aria-hidden="true" />
                       {latest.coffeeName}
                     </Link>
                   ) : null}
-                  <span className="confidence">{CONFIDENCE_LABEL[suggestion.confidence]}</span>
+                  <Confidence level={suggestion.confidence} />
                 </div>
               </section>
             ) : shots.error ? (
