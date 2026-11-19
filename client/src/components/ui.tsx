@@ -1,5 +1,17 @@
-import { cloneElement, isValidElement, useEffect, useId, useState, type ReactNode } from 'react';
-import { Star, X, type LucideIcon } from 'lucide-react';
+import {
+  cloneElement,
+  createContext,
+  isValidElement,
+  useContext,
+  useEffect,
+  useId,
+  useState,
+  type ReactNode,
+} from 'react';
+import { createPortal } from 'react-dom';
+import { CircleCheck, CircleDot, CircleHelp, Star, X, type LucideIcon } from 'lucide-react';
+import type { Suggestion } from '@brewlab/shared';
+import { CONFIDENCE_LABEL } from '../lib/coach';
 
 const LABELABLE = new Set(['input', 'select', 'textarea']);
 
@@ -98,6 +110,23 @@ export function RatingInput({
   );
 }
 
+const CONFIDENCE_ICON: Record<Suggestion['confidence'], LucideIcon> = {
+  high: CircleCheck,
+  medium: CircleDot,
+  low: CircleHelp,
+};
+
+/** How sure the coach is, as an icon and a few words. */
+export function Confidence({ level }: { level: Suggestion['confidence'] }) {
+  const Icon = CONFIDENCE_ICON[level];
+  return (
+    <span className="confidence">
+      <Icon aria-hidden="true" />
+      {CONFIDENCE_LABEL[level]}
+    </span>
+  );
+}
+
 export function Empty({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <div className="empty">
@@ -126,6 +155,18 @@ export function Banner({
   );
 }
 
+/** Where a modal's header lets its content put controls, next to the close button. */
+const ModalSlot = createContext<HTMLElement | null>(null);
+
+/**
+ * Controls that belong in the header of the modal around them, so they do not
+ * cost the body a row of their own. Outside a modal they render in place.
+ */
+export function ModalHeaderSlot({ children }: { children: ReactNode }) {
+  const slot = useContext(ModalSlot);
+  return slot ? createPortal(children, slot) : <>{children}</>;
+}
+
 export function Modal({
   title,
   onClose,
@@ -137,6 +178,7 @@ export function Modal({
   wide?: boolean;
   children: ReactNode;
 }) {
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -153,11 +195,14 @@ export function Modal({
       >
         <div className="spread mb-4">
           <h2>{title}</h2>
-          <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Close">
-            <X aria-hidden="true" />
-          </button>
+          <div className="modal-actions">
+            <div className="modal-slot" ref={setSlot} />
+            <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Close">
+              <X aria-hidden="true" />
+            </button>
+          </div>
         </div>
-        {children}
+        <ModalSlot.Provider value={slot}>{children}</ModalSlot.Provider>
       </div>
     </div>
   );

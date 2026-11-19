@@ -43,7 +43,7 @@ import {
   es1StageSchema,
   fellowOptInSchema,
 } from './schemas.ts';
-import { flowRate, ratioOf, suggestNextShot } from './dialin.ts';
+import { flowRate, isDialedIn, ratioOf, suggestNextShot } from './dialin.ts';
 import {
   RECOMMENDATIONS_BY_ID,
   RECOMMENDED_GRINDERS,
@@ -669,4 +669,12 @@ test('peak pressure is the highest point of any stage, start or end', () => {
   ];
   assert.equal(peakPressureBar({ stages }), 9.2);
   assert.equal(peakPressureBar({ stages: [] }), null);
+});
+
+test('a coffee is dialed in at three shots rated four stars or better', () => {
+  assert.equal(isDialedIn(2), false);
+  assert.equal(isDialedIn(3), true);
+  assert.equal(isDialedIn(0), false);
+  assert.equal(isDialedIn(undefined), false);
+  assert.equal(isDialedIn(null), false);
 });

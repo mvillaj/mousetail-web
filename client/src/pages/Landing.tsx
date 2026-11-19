@@ -12,7 +12,8 @@ import {
 import BrandLockup from '../components/BrandLockup';
 import ShotGlass, { tasteLabel } from '../components/ShotGlass';
 import { ProfileCurve, STAGE_COLOUR } from '../components/charts';
-import { baristaLine, CONFIDENCE_LABEL } from '../lib/coach';
+import { baristaLine } from '../lib/coach';
+import { Confidence } from '../components/ui';
 import { pressureEaser, smoothPressurePaths } from '../lib/curve';
 import pour640 from '../assets/hero/pour-640.jpg';
 import pour1080 from '../assets/hero/pour-1080.jpg';
@@ -617,7 +618,7 @@ function CoachDemo() {
             Coach my own shots
             <ArrowRight aria-hidden="true" />
           </Link>
-          <span className="confidence">{CONFIDENCE_LABEL[s.confidence]}</span>
+          <Confidence level={s.confidence} />
         </div>
       </section>
     </div>

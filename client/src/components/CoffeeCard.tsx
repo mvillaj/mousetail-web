@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import type { Coffee } from '@brewlab/shared';
+import { BadgeCheck } from 'lucide-react';
+import { DIALED_IN_MIN_RATING, isDialedIn, type Coffee } from '@brewlab/shared';
 import { daysOffRoast } from '../lib/format';
 
 export default function CoffeeCard({
@@ -10,8 +11,9 @@ export default function CoffeeCard({
   action?: React.ReactNode;
 }) {
   const off = daysOffRoast(coffee.roastDate);
+  const dialedIn = isDialedIn(coffee.wellRatedShotCount);
   return (
-    <div className="list-item">
+    <div className={`list-item${dialedIn ? ' has-stamp' : ''}`}>
       <div className="spread align-start">
         <div>
           <Link className="item-title" to={`/coffees/${coffee.id}`}>
@@ -48,6 +50,16 @@ export default function CoffeeCard({
         {coffee.cloneCount ? ` · cloned ${coffee.cloneCount}×` : ''}
         {coffee.ownerName ? ` · by ${coffee.ownerName}` : ''}
       </div>
+
+      {dialedIn ? (
+        <span className="stamp" tabIndex={0}>
+          <BadgeCheck aria-hidden="true" />
+          Dialed in
+          <span className="stamp-tip" role="tooltip">
+            {coffee.wellRatedShotCount} shots rated {DIALED_IN_MIN_RATING} stars or more
+          </span>
+        </span>
+      ) : null}
     </div>
   );
 }

@@ -2426,11 +2426,26 @@ button.list-item[aria-busy='true'] .working-bars {
   background: var(--on-body-line);
   color: var(--on-body);
 }
+/* The coffee link is a real, secondary button: an outline, not a bare label. */
+.coach .coach-actions .btn-ghost {
+  border-color: var(--on-body-line);
+  color: var(--on-body);
+}
+/* How sure the coach is. Same size as the buttons beside it, with a dot to
+   anchor it, so it reads as part of the row rather than stray text. */
 .coach .confidence {
-  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 0.92rem;
   font-weight: 600;
   color: var(--on-body-dim);
-  margin-left: auto;
+}
+.coach .confidence svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
 }
 .coach.is-empty {
   grid-template-columns: auto minmax(0, 1fr);
@@ -2907,10 +2922,12 @@ button.list-item[aria-busy='true'] .working-bars {
   animation: pour 0.9s var(--ease-out) both;
 }
 /* Moving between pages: the new page eases up into place. Entry only, so the
-   old page never lingers and navigation never feels slower. */
+   old page never lingers and navigation never feels slower. `backwards`, not
+   `both`: a filled transform would keep this box the containing block for
+   position: fixed, clipping modals to the page instead of the viewport. */
 @media (prefers-reduced-motion: no-preference) {
   .route-view.is-entering {
-    animation: route-in 0.26s var(--ease-out) both;
+    animation: route-in 0.26s var(--ease-out) backwards;
   }
 }
 @keyframes route-in {
@@ -2993,4 +3010,284 @@ button.list-item[aria-busy='true'] .working-bars {
     /* Clear the fixed tab bar, which is about 64px tall plus its own inset. */
     bottom: calc(80px + env(safe-area-inset-bottom));
   }
+}
+
+/* Simple shot form (ES1): few questions, big targets. */
+.simple-shot {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.simple-step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.simple-step h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.simple-step h3 .simple-num {
+  color: var(--action-ink);
+}
+.simple-select,
+.simple-number {
+  font-size: 1.15rem;
+  min-height: 3.4rem;
+}
+.simple-number {
+  max-width: 12rem;
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+.simple-note {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+}
+.simple-choices {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.simple-choices.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.simple-choice {
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px;
+  text-align: left;
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    opacity 0.15s,
+    transform 0.22s var(--spring);
+}
+.simple-choices:has(.on) .simple-choice:not(.on) {
+  opacity: 0.6;
+}
+.simple-choices:has(.on) .simple-choice:not(.on):hover,
+.simple-choices:has(.on) .simple-choice:not(.on):focus-visible {
+  opacity: 1;
+}
+.simple-choice:active {
+  transform: scale(0.98);
+}
+.simple-choice.center {
+  align-items: center;
+  text-align: center;
+}
+.simple-choice svg {
+  width: 36px;
+  height: 36px;
+  color: var(--action);
+}
+.simple-choice:hover {
+  border-color: var(--action-line);
+}
+.simple-choice.on {
+  border-color: var(--action);
+  background: var(--action-soft);
+}
+.simple-choice-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.simple-choice-hint {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+}
+.simple-rating .rating-input {
+  gap: 10px;
+}
+.simple-rating .rating-input button svg {
+  width: 44px;
+  height: 44px;
+}
+.simple-submit {
+  align-self: stretch;
+}
+@media (max-width: 600px) {
+  .simple-choices.three {
+    grid-template-columns: 1fr;
+  }
+  .simple-choices.three .simple-choice {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    gap: 12px;
+  }
+  .simple-choices.three .simple-choice-hint {
+    display: none;
+  }
+}
+
+.shot-mode {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Grind dial: a number to type or nudge, a slider, and grounds that grow with it. */
+.grind-dial {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: var(--field);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+.grind-dial.bad {
+  border-color: var(--bad);
+}
+.grind-dial-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.grind-dial-number {
+  max-width: 7.5rem;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--action-ink);
+}
+.grind-dial-step {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  padding: 0;
+  color: var(--action);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    transform 0.22s var(--spring);
+}
+.grind-dial-step:hover {
+  border-color: var(--action);
+}
+.grind-dial-step:active {
+  transform: scale(0.9);
+}
+.grind-dial-step svg {
+  width: 22px;
+  height: 22px;
+}
+.grind-dial-grounds {
+  margin-left: auto;
+  width: 112px;
+  height: 76px;
+  flex: none;
+  fill: var(--action);
+  opacity: 0.85;
+}
+.grind-dial-grounds polygon {
+  stroke: var(--action);
+  stroke-width: 0.12px;
+  stroke-linejoin: miter;
+  transition: transform 0.25s var(--ease-out);
+}
+.grind-dial-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.grind-dial-slider input.idle {
+  opacity: 0.5;
+}
+.grind-dial-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+@media (max-width: 600px) {
+  .grind-dial-grounds {
+    display: none;
+  }
+}
+
+/* Modal header controls, beside the close button. */
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-slot:empty {
+  display: none;
+}
+
+/* "Dialed in" stamp, set into the corner of a coffee card. */
+.list-item.has-stamp {
+  position: relative;
+  padding-bottom: 54px;
+}
+.stamp {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px 5px 9px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--action);
+  border: 2px solid currentColor;
+  border-radius: var(--radius);
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+  cursor: help;
+}
+.stamp svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* A tooltip we draw ourselves: the native title one is too easy to miss. */
+.stamp-tip {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-pop);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition:
+    opacity 0.15s,
+    transform 0.15s var(--ease-out),
+    visibility 0.15s;
+  pointer-events: none;
+}
+.stamp:hover .stamp-tip,
+.stamp:focus-visible .stamp-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
 }

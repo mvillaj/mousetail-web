@@ -89,6 +89,7 @@ export const toCoffee = (r: Row): Coffee => ({
   createdAt: r.created_at,
   shotCount: r.shot_count ?? undefined,
   avgRating: r.avg_rating ?? null,
+  wellRatedShotCount: r.well_rated_count ?? undefined,
   cloneCount: r.clone_count ?? undefined,
 });
 
