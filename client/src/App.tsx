@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
   BookOpen,
@@ -290,6 +290,13 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { capabilities } = useMachines();
   const nav = navFor(capabilities);
   const [more, setMore] = useState(false);
+
+  // Pages ease in when you move between them, but not on the first paint: the
+  // app's launch stays as seamless as it is.
+  const { pathname } = useLocation();
+  const route = useRef({ pathname, navigated: false });
+  if (route.current.pathname !== pathname) route.current = { pathname, navigated: true };
+
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -304,7 +311,14 @@ function Shell({ children }: { children: React.ReactNode }) {
         <BrandLockup />
       </header>
 
-      <main className="main">{children}</main>
+      <main className="main">
+        <div
+          key={pathname}
+          className={route.current.navigated ? 'route-view is-entering' : 'route-view'}
+        >
+          {children}
+        </div>
+      </main>
 
       <TabBar onMore={() => setMore(true)} />
       {more ? <MoreSheet groups={nav} onClose={() => setMore(false)} /> : null}

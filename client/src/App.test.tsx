@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { Link, MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App, { MoreSheet, navFor } from './App';
 import { LOADING_DELAY_MS } from './lib/delay';
@@ -133,6 +133,33 @@ describe('first-run redirect', () => {
       g.links.map((l) => l.to),
     );
     expect(links).toContain('/getting-started');
+  });
+});
+
+describe('page transitions', () => {
+  const renderApp = () =>
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <ThemeProvider>
+          <App />
+          <Link to="/getting-started">Go</Link>
+        </ThemeProvider>
+      </MemoryRouter>,
+    );
+
+  it('does not animate the first paint', () => {
+    authUser = { displayName: 'Old', onboardedAt: '2026-10-01T00:00:00.000Z' };
+    const { container } = renderApp();
+    expect(container.querySelector('.route-view')).not.toBeNull();
+    expect(container.querySelector('.is-entering')).toBeNull();
+  });
+
+  it('eases the next page in when navigating', () => {
+    authUser = { displayName: 'Old', onboardedAt: '2026-10-01T00:00:00.000Z' };
+    const { container } = renderApp();
+    fireEvent.click(screen.getByRole('link', { name: 'Go' }));
+    expect(screen.getByRole('heading', { name: 'Getting started page' })).toBeTruthy();
+    expect(container.querySelector('.route-view.is-entering')).not.toBeNull();
   });
 });
 

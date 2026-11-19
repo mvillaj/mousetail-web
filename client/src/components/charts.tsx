@@ -105,16 +105,19 @@ export function ProfileCurve({
         </g>
       ))}
 
-      <path d={area} fill="url(#crema-fill)" />
+      <path className="chart-fade" d={area} fill="url(#crema-fill)" />
       <path
+        className="chart-fade"
         d={flowLine}
         fill="none"
         stroke="var(--cool)"
         strokeWidth="1.4"
         strokeDasharray="4 3"
-        opacity="0.75"
+        strokeOpacity="0.75"
       />
       <path
+        className="chart-draw"
+        pathLength={1}
         d={line}
         fill="none"
         stroke="var(--chart-pressure)"
@@ -198,10 +201,20 @@ export function DialInChart({ shots, targetS = 28 }: { shots: Shot[]; targetS?: 
         {targetS}s target
       </text>
 
-      <path d={path} fill="none" stroke="var(--text-dim)" strokeWidth="1.5" opacity="0.55" />
+      <path
+        className="chart-draw"
+        pathLength={1}
+        d={path}
+        fill="none"
+        stroke="var(--text-dim)"
+        strokeWidth="1.5"
+        opacity="0.55"
+      />
       {ordered.map((s, i) => (
         <g key={s.id}>
           <circle
+            className="chart-dot"
+            style={{ animationDelay: `${0.35 + (i / ordered.length) * 0.5}s` }}
             cx={x(i)}
             cy={y(s.shotTimeS)}
             r="5"
