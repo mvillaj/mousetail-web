@@ -2217,6 +2217,40 @@ button.list-item[aria-busy='true'] .working-bars {
   stroke: var(--border-strong);
   stroke-width: 1;
 }
+/* Charts draw themselves once, when they first appear. pathLength is set to 1
+   in the markup, so one keyframe fits a curve of any length. */
+@media (prefers-reduced-motion: no-preference) {
+  .chart .chart-draw {
+    stroke-dasharray: 1;
+    animation: chart-draw 0.9s var(--ease-out) both;
+  }
+  .chart .chart-fade {
+    animation: fade-in 0.6s 0.3s var(--ease-out) both;
+  }
+  .chart .chart-dot {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: dot-pop 0.35s var(--spring) both;
+  }
+}
+@keyframes chart-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes dot-pop {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
 
 /* One infusion step. Sized by content so the action buttons cannot overflow. */
 .infusion-row {
@@ -2871,6 +2905,23 @@ button.list-item[aria-busy='true'] .working-bars {
   transform-box: fill-box;
   transform-origin: bottom;
   animation: pour 0.9s var(--ease-out) both;
+}
+/* Moving between pages: the new page eases up into place. Entry only, so the
+   old page never lingers and navigation never feels slower. */
+@media (prefers-reduced-motion: no-preference) {
+  .route-view.is-entering {
+    animation: route-in 0.26s var(--ease-out) both;
+  }
+}
+@keyframes route-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes pour {
   from {
