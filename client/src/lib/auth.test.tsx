@@ -1,7 +1,7 @@
 import { act, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DASHBOARD_REQUESTS } from '../pages/dashboardRequests';
-import { clearPrefetched, prefetch } from './api';
+import { clearCache, prefetch } from './api';
 import { AuthProvider, useAuth } from './auth';
 
 const signOut = vi.fn();
@@ -18,7 +18,7 @@ vi.mock('@clerk/clerk-react', () => ({
 vi.mock('./api', async (original) => ({
   ...(await original<typeof import('./api')>()),
   prefetch: vi.fn(),
-  clearPrefetched: vi.fn(),
+  clearCache: vi.fn(),
 }));
 
 const ME = {
@@ -51,7 +51,7 @@ beforeEach(() => {
   localStorage.clear();
   window.history.replaceState(null, '', '/');
   vi.mocked(prefetch).mockClear();
-  vi.mocked(clearPrefetched).mockClear();
+  vi.mocked(clearCache).mockClear();
 });
 
 afterEach(() => {
@@ -109,12 +109,13 @@ describe('AuthProvider prefetch', () => {
     expect(localStorage.getItem('brewlab.onboarded')).toBeNull();
   });
 
-  it('drops prefetched answers and the flag on sign-out', async () => {
+  it('drops remembered answers and the flag on sign-out', async () => {
     stubMe(ME);
     renderAuth();
     await waitFor(() => expect(auth.ready).toBe(true));
+    vi.mocked(clearCache).mockClear();
     act(() => auth.logout());
-    expect(clearPrefetched).toHaveBeenCalled();
+    expect(clearCache).toHaveBeenCalled();
     expect(localStorage.getItem('brewlab.onboarded')).toBeNull();
     expect(signOut).toHaveBeenCalled();
   });

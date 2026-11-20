@@ -51,15 +51,23 @@ export async function api<T = unknown>(
 ): Promise<T> {
   const token = await tokenGetter();
   const hasBody = init.body !== undefined;
-  const res = await fetch(`/api${path}`, {
-    ...init,
-    headers: {
-      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init.headers,
-    },
-    body: hasBody ? JSON.stringify(init.body) : undefined,
-  });
+  const method = (init.method ?? 'GET').toUpperCase();
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, {
+      ...init,
+      headers: {
+        ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...init.headers,
+      },
+      body: hasBody ? JSON.stringify(init.body) : undefined,
+    });
+  } finally {
+    // Anything that may have changed data, done or failed, voids every
+    // remembered answer, so a page can never draw something from before it.
+    if (method !== 'GET' && method !== 'HEAD') forgetAnswers();
+  }
   if (res.status === 204) return undefined as T;
   const data = parseBody(await res.text());
   if (typeof data === 'string') {
@@ -114,6 +122,42 @@ export function clearPrefetched() {
   prefetched.clear();
 }
 
+/**
+ * The last answer each path gave a page this session, so a page you come back
+ * to draws at once and refreshes in the background, rather than opening on a
+ * loading state. In memory only, like prefetches.
+ *
+ * Any write through api() forgets every answer: writes are spread across the
+ * app, and dropping the lot is the one rule that can't miss a page. Browsing
+ * back and forth between writes is what this is for.
+ */
+const answers = new Map<string, unknown>();
+
+/**
+ * Bumped whenever answers are forgotten. A read remembers its answer only if
+ * no write happened while it was out, so one that left before a write can't
+ * bring the old data back after it.
+ */
+let generation = 0;
+
+function forgetAnswers() {
+  generation += 1;
+  answers.clear();
+}
+
+function remember(path: string, data: unknown, since: number) {
+  if (since === generation) answers.set(path, data);
+}
+
+const recalled = (path: string | null) =>
+  path && answers.has(path) ? { data: answers.get(path) } : undefined;
+
+/** Everything this module holds for the signed-in account. Sign-out calls it. */
+export function clearCache() {
+  forgetAnswers();
+  clearPrefetched();
+}
+
 function peekPrefetched(path: string | null): Prefetched | undefined {
   if (!path) return undefined;
   const entry = prefetched.get(path);
@@ -133,12 +177,16 @@ const settledData = (entry: Prefetched | undefined) =>
   entry?.settled && 'data' in entry.settled ? entry.settled.data : null;
 
 /**
- * Minimal data hook: fetch on mount, expose a manual refresh. A prefetch of the
- * same path is used for the first load, and one that has already landed is on
- * screen from the first render.
+ * Minimal data hook: fetch on mount, expose a manual refresh. A path this
+ * session has already read is on screen from the first render and refreshed
+ * in the background. Otherwise a prefetch of the same path is used for the
+ * first load, and one that has already landed is on screen from the first
+ * render too.
  */
 export function useApi<T>(path: string | null, deps: unknown[] = []) {
-  const [data, setData] = useState<T | null>(() => settledData(peekPrefetched(path)) as T | null);
+  const [data, setData] = useState<T | null>(
+    () => (recalled(path)?.data ?? settledData(peekPrefetched(path))) as T | null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(() => Boolean(path) && data == null);
   const first = useRef(true);
@@ -149,6 +197,7 @@ export function useApi<T>(path: string | null, deps: unknown[] = []) {
       setLoading(false);
       return;
     }
+    const since = generation;
     const ahead = first.current ? takePrefetched(path) : undefined;
     first.current = false;
     if (ahead?.settled) {
@@ -156,18 +205,29 @@ export function useApi<T>(path: string | null, deps: unknown[] = []) {
       if ('data' in ahead.settled) {
         setData(ahead.settled.data as T);
         setError(null);
+        remember(path, ahead.settled.data, since);
       } else {
         setError(ahead.settled.error);
       }
       setLoading(false);
       return;
     }
-    setLoading(true);
+    // Seen before: show that while asking again, with no loading state. If
+    // asking fails (offline, say), what you saw last stays up.
+    const known = recalled(path);
+    if (known) {
+      setData(known.data as T);
+      setError(null);
+    } else {
+      setLoading(true);
+    }
     try {
-      setData((await (ahead?.promise ?? api<T>(path))) as T);
+      const fresh = (await (ahead?.promise ?? api<T>(path))) as T;
+      remember(path, fresh, since);
+      setData(fresh);
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      if (!known) setError((e as Error).message);
     } finally {
       setLoading(false);
     }

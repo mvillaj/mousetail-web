@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import type { Machine, Me, PublicUser } from '@brewlab/shared';
 import { DASHBOARD_REQUESTS } from '../pages/dashboardRequests';
-import { api, clearPrefetched, prefetch, setTokenGetter } from './api';
+import { api, clearCache, prefetch, setTokenGetter } from './api';
 
 /**
  * The Clerk user this browser last saw finish getting started. Only an id, no
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isLoaded) return;
     if (!isSignedIn) {
-      clearPrefetched();
+      clearCache();
       setUser(null);
       setInitialMachines(null);
       setReady(true);
@@ -77,6 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let cancelled = false;
     setReady(false);
+    // A new session, maybe another account: nothing read for the last one carries over.
+    clearCache();
     if (clerkUserId && window.location.pathname === '/' && wasOnboarded(clerkUserId)) {
       prefetch(DASHBOARD_REQUESTS);
     }
@@ -107,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout: () => {
         setUser(null);
         setInitialMachines(null);
-        clearPrefetched();
+        clearCache();
         rememberOnboarded(null);
         void signOut();
       },
