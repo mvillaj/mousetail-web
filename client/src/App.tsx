@@ -1,4 +1,6 @@
-import { ViewTransition, useEffect, useLayoutEffect, useState } from 'react';
+import { ViewTransition, useEffect, useId, useLayoutEffect, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
+import * as m from 'motion/react-m';
 import {
   NavLink,
   Navigate,
@@ -115,13 +117,32 @@ function Nav({ groups }: { groups: ReturnType<typeof navFor> }) {
       nav.scrollTop = top + active.offsetHeight - nav.clientHeight;
     }
   }, [pathname]);
+
+  // One soft pill that glides to whichever link the pointer is over, fading
+  // in as it arrives and out as it leaves. Its own id per nav: the sidebar and
+  // the More sheet each have one.
+  const [hovered, setHovered] = useState<string | null>(null);
+  const highlight = useId();
+
   return (
-    <nav className="nav" aria-label="Main">
+    <nav className="nav" aria-label="Main" onMouseLeave={() => setHovered(null)}>
       {groups.map((group) => (
         <div className="nav-group" key={group.section}>
           <div className="nav-label">{group.section}</div>
           {group.links.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.end}>
+            <NavLink key={l.to} to={l.to} end={l.end} onMouseEnter={() => setHovered(l.to)}>
+              <AnimatePresence>
+                {hovered === l.to ? (
+                  <m.span
+                    className="nav-hover"
+                    layoutId={highlight}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                  />
+                ) : null}
+              </AnimatePresence>
               <l.icon className="nav-icon" aria-hidden="true" />
               {l.label}
             </NavLink>

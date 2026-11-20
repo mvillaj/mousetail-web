@@ -179,6 +179,12 @@ describe('simple shot form', () => {
     expect(input).toHaveValue(5);
     await userEvent.click(screen.getByRole('button', { name: 'Raise the setting' }));
     expect(input).toHaveValue(5.1);
+    // Over the input, the same number as rolling digits.
+    const rolling = document.querySelector('.grind-dial-rolling')!;
+    expect(rolling).toHaveAttribute('aria-hidden', 'true');
+    expect(
+      [...rolling.querySelectorAll<HTMLElement>('[data-digit]')].map((d) => d.dataset.digit),
+    ).toEqual(['5', '1']);
     await userEvent.click(screen.getByRole('button', { name: 'Lower the setting' }));
     expect(input).toHaveValue(5);
 

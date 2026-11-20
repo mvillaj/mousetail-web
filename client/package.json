@@ -16,6 +16,7 @@
     "@brewlab/shared": "workspace:*",
     "@clerk/clerk-react": "^5.61.9",
     "lucide-react": "^1.53.0",
+    "motion": "^14.14.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.5"

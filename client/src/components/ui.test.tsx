@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { useState } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Confidence, Field, Modal, ModalHeaderSlot, RatingInput, Stars, Working } from './ui';
 
 describe('Field', () => {
@@ -70,6 +71,74 @@ describe('RatingInput', () => {
       'aria-pressed',
       'false',
     );
+  });
+
+  describe('the burst', () => {
+    function Rating({ start = null }: { start?: number | null }) {
+      const [value, setValue] = useState<number | null>(start);
+      return <RatingInput value={value} onChange={setValue} />;
+    }
+    const sparksOn = (n: number) =>
+      screen.getByRole('button', { name: `${n} stars` }).querySelectorAll('.rating-spark');
+    const popping = (container: HTMLElement) =>
+      [...container.querySelectorAll('[data-pop]')].map((star) =>
+        star.closest('button')!.getAttribute('aria-label'),
+      );
+
+    // As in the app once motion's engine is in (lib/motion.ts).
+    beforeEach(() => {
+      document.documentElement.dataset.motion = 'ready';
+    });
+    afterEach(() => {
+      delete document.documentElement.dataset.motion;
+    });
+
+    it('throws sparks from the star that raised the rating', async () => {
+      const { container } = render(<Rating />);
+      expect(container.querySelectorAll('.rating-spark')).toHaveLength(0);
+      await userEvent.click(screen.getByRole('button', { name: '4 stars' }));
+      expect(sparksOn(4).length).toBeGreaterThan(0);
+      expect(container.querySelectorAll('.rating-spark')).toHaveLength(sparksOn(4).length);
+    });
+
+    it('stays quiet when the rating goes down or is cleared', async () => {
+      const { container } = render(<Rating start={4} />);
+      await userEvent.click(screen.getByRole('button', { name: '2 stars' }));
+      expect(container.querySelectorAll('.rating-spark')).toHaveLength(0);
+      await userEvent.click(screen.getByRole('button', { name: '2 stars' }));
+      expect(container.querySelectorAll('.rating-spark')).toHaveLength(0);
+    });
+
+    it('does not celebrate a rating that was already there', () => {
+      const { container } = render(<Rating start={5} />);
+      expect(container.querySelectorAll('.rating-spark')).toHaveLength(0);
+      expect(popping(container)).toEqual([]);
+    });
+
+    it('pops only the stars the click lit', async () => {
+      const { container } = render(<Rating start={2} />);
+      await userEvent.click(screen.getByRole('button', { name: '4 stars' }));
+      expect(popping(container)).toEqual(['3 stars', '4 stars']);
+      await userEvent.click(screen.getByRole('button', { name: '1 stars' }));
+      expect(popping(container)).toEqual([]);
+    });
+
+    it('stays still when the rating changes without a click', async () => {
+      const { container, rerender } = render(<RatingInput value={1} onChange={() => {}} />);
+      await userEvent.click(screen.getByRole('button', { name: '2 stars' }));
+      rerender(<RatingInput value={5} onChange={() => {}} />);
+      expect(popping(container)).toEqual([]);
+    });
+
+    it('throws no sparks before motion’s engine is in, even once it arrives', async () => {
+      delete document.documentElement.dataset.motion;
+      const { container, rerender } = render(<Rating />);
+      await userEvent.click(screen.getByRole('button', { name: '3 stars' }));
+      expect(container.querySelectorAll('.rating-spark')).toHaveLength(0);
+      document.documentElement.dataset.motion = 'ready';
+      rerender(<Rating />);
+      expect(container.querySelectorAll('.rating-spark')).toHaveLength(0);
+    });
   });
 });
 
