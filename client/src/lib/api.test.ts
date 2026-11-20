@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   api,
   ApiError,
+  clearCache,
   clearPrefetched,
   prefetch,
   PREFETCH_TTL_MS,
@@ -160,6 +161,131 @@ describe('prefetch', () => {
     clearPrefetched();
     fetch.answer(['mine']);
     const { result } = renderHook(() => useApi<string[]>('/shots'));
+    await waitFor(() => expect(result.current.data).toEqual(['mine']));
+  });
+});
+
+// A page you come back to draws what it showed last, then refreshes.
+describe('remembered answers', () => {
+  /** Answers per path; a fresh Response per call. Writes answer 204. */
+  function server(routes: Record<string, unknown>) {
+    const state = { routes, failing: false, holding: false, held: [] as (() => void)[] };
+    const fn = vi.fn(async (url: string, init?: RequestInit) => {
+      if (state.failing) throw new TypeError('Failed to fetch');
+      if (init?.method && init.method !== 'GET') return respond(204);
+      // The body is read now, so a held read answers with what was true when it left.
+      const body = state.routes[url.replace(/^\/api/, '')];
+      if (state.holding) await new Promise<void>((r) => state.held.push(r));
+      return respond(200, body);
+    });
+    vi.stubGlobal('fetch', fn);
+    return Object.assign(fn, {
+      answer: (path: string, body: unknown) => (state.routes[path] = body),
+      fail: () => (state.failing = true),
+      /** Holds later reads until the returned function lets them all go. */
+      hold: () => {
+        state.holding = true;
+        return () => {
+          state.holding = false;
+          state.held.splice(0).forEach((go) => go());
+        };
+      },
+    });
+  }
+
+  async function visit<T>(path: string) {
+    const page = renderHook(() => useApi<T>(path));
+    await waitFor(() => expect(page.result.current.loading).toBe(false));
+    return page;
+  }
+
+  it('draws the last answer at once on a revisit, then shows the fresh one', async () => {
+    const fetch = server({ '/coffees': ['Kenya'] });
+    (await visit('/coffees')).unmount();
+
+    fetch.answer('/coffees', ['Kenya', 'Peru']);
+    const { result } = renderHook(() => useApi<string[]>('/coffees'));
+    expect(result.current.data).toEqual(['Kenya']);
+    expect(result.current.loading).toBe(false);
+    await waitFor(() => expect(result.current.data).toEqual(['Kenya', 'Peru']));
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the last answer up when the refresh fails, rather than an error', async () => {
+    const fetch = server({ '/coffees': ['Kenya'] });
+    (await visit('/coffees')).unmount();
+
+    fetch.fail();
+    const { result } = renderHook(() => useApi<string[]>('/coffees'));
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.data).toEqual(['Kenya']);
+    expect(result.current.error).toBeNull();
+  });
+
+  it('draws a remembered answer when a page switches back to a path', async () => {
+    server({ '/shots?coffeeId=a': ['a1'], '/shots?coffeeId=b': ['b1'] });
+    const { result, rerender } = renderHook(({ path }) => useApi<string[]>(path, [path]), {
+      initialProps: { path: '/shots?coffeeId=a' },
+    });
+    await waitFor(() => expect(result.current.data).toEqual(['a1']));
+    rerender({ path: '/shots?coffeeId=b' });
+    await waitFor(() => expect(result.current.data).toEqual(['b1']));
+
+    rerender({ path: '/shots?coffeeId=a' });
+    await waitFor(() => expect(result.current.data).toEqual(['a1']));
+    expect(result.current.loading).toBe(false);
+  });
+
+  it('forgets everything after a write, so nothing from before it is drawn', async () => {
+    const fetch = server({ '/coffees': ['Kenya'] });
+    (await visit('/coffees')).unmount();
+
+    await api('/coffees/kenya', { method: 'DELETE' });
+    fetch.answer('/coffees', []);
+    const { result } = renderHook(() => useApi<string[]>('/coffees'));
+    expect(result.current.data).toBeNull();
+    expect(result.current.loading).toBe(true);
+    await waitFor(() => expect(result.current.data).toEqual([]));
+  });
+
+  it('forgets even when the write fails', async () => {
+    const fetch = server({ '/coffees': ['Kenya'] });
+    (await visit('/coffees')).unmount();
+
+    fetch.fail();
+    await expect(api('/coffees', { method: 'POST', body: {} })).rejects.toThrow();
+    const { result } = renderHook(() => useApi<string[]>('/coffees'));
+    expect(result.current.data).toBeNull();
+  });
+
+  it('does not remember a read that was out while a write landed', async () => {
+    const fetch = server({ '/coffees': ['Kenya'] });
+    const release = fetch.hold();
+    const page = renderHook(() => useApi<string[]>('/coffees'));
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+
+    // The write goes straight through; the read it raced is still out.
+    const write = api('/coffees/kenya', { method: 'DELETE' });
+    release();
+    await write;
+    await waitFor(() => expect(page.result.current.data).toEqual(['Kenya']));
+    page.unmount();
+
+    fetch.answer('/coffees', []);
+    const { result } = renderHook(() => useApi<string[]>('/coffees'));
+    expect(result.current.data).toBeNull();
+    await waitFor(() => expect(result.current.data).toEqual([]));
+  });
+
+  it('drops everything on clear, so the next account never sees the last one’s answers', async () => {
+    const fetch = server({ '/coffees': ['theirs'] });
+    (await visit('/coffees')).unmount();
+
+    clearCache();
+    fetch.answer('/coffees', ['mine']);
+    const { result } = renderHook(() => useApi<string[]>('/coffees'));
+    expect(result.current.data).toBeNull();
     await waitFor(() => expect(result.current.data).toEqual(['mine']));
   });
 });
