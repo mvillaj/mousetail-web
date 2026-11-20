@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import type { ReactNode } from 'react';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
 import { ClerkProvider } from '@clerk/clerk-react';
+import { LazyMotion, MotionConfig } from 'motion/react';
 import App from './App';
 import AppStatus from './components/AppStatus';
 import { AuthProvider } from './lib/auth';
@@ -53,21 +54,31 @@ function ClerkWithRouter({ children }: { children: ReactNode }) {
   );
 }
 
+/** Motion's engine arrives after first paint, in a chunk of its own. */
+const motionFeatures = () => import('./lib/motionFeatures').then((m) => m.default);
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
-      <ClerkWithRouter>
-        <ThemeProvider>
-          <AuthProvider>
-            <MachineProvider>
-              <AiProvider>
-                <App />
-                <AppStatus />
-              </AiProvider>
-            </MachineProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </ClerkWithRouter>
-    </BrowserRouter>
+    {/* reducedMotion="user": every motion animation honours the OS setting.
+        strict: importing the full `motion` component (not `m`) throws, so it
+        can't quietly undo the lazy loading. */}
+    <MotionConfig reducedMotion="user">
+      <LazyMotion features={motionFeatures} strict>
+        <BrowserRouter>
+          <ClerkWithRouter>
+            <ThemeProvider>
+              <AuthProvider>
+                <MachineProvider>
+                  <AiProvider>
+                    <App />
+                    <AppStatus />
+                  </AiProvider>
+                </MachineProvider>
+              </AuthProvider>
+            </ThemeProvider>
+          </ClerkWithRouter>
+        </BrowserRouter>
+      </LazyMotion>
+    </MotionConfig>
   </StrictMode>,
 );

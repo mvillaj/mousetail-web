@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { useReducedMotion } from 'motion/react';
+import * as m from 'motion/react-m';
 import { CircleCheck, CircleDot, CircleHelp, Star, X, type LucideIcon } from 'lucide-react';
 import type { Suggestion } from '@brewlab/shared';
 import { CONFIDENCE_LABEL } from '../lib/coach';
@@ -85,6 +87,16 @@ export function Stars({ value }: { value: number | null }) {
   );
 }
 
+/** Where the burst's sparks fly, in degrees around the star. */
+const SPARKS = [0, 60, 120, 180, 240, 300];
+/**
+ * How far from the star's centre they start and finish, in px. They're the
+ * star's colour, so they start at its edge: from the centre they'd be lost
+ * against it until they'd nearly faded.
+ */
+const SPARK_FROM = 17;
+const SPARK_TO = 31;
+
 export function RatingInput({
   value,
   onChange,
@@ -92,20 +104,66 @@ export function RatingInput({
   value: number | null;
   onChange: (v: number | null) => void;
 }) {
+  // Raising the rating is worth a small celebration: the stars that light up
+  // pop in turn, and the one you clicked throws off a few sparks. Lowering or
+  // clearing it, and anything not from a click, stays quiet. `id` restarts the
+  // burst on every raise.
+  const [raise, setRaise] = useState<{ star: number; from: number; id: number } | null>(null);
+  const calm = useReducedMotion();
+
   return (
     <div className="rating-input">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button
-          key={n}
-          type="button"
-          className={value != null && n <= value ? 'on' : ''}
-          onClick={() => onChange(value === n ? null : n)}
-          aria-label={`${n} stars`}
-          aria-pressed={value != null && n <= value}
-        >
-          <Star aria-hidden="true" />
-        </button>
-      ))}
+      {[1, 2, 3, 4, 5].map((n) => {
+        const on = value != null && n <= value;
+        return (
+          <button
+            key={n}
+            type="button"
+            className={on ? 'on' : ''}
+            onClick={() => {
+              const next = value === n ? null : n;
+              if (next != null && next > (value ?? 0)) {
+                setRaise((r) => ({ star: n, from: value ?? 0, id: (r?.id ?? 0) + 1 }));
+              }
+              onChange(next);
+            }}
+            aria-label={`${n} stars`}
+            aria-pressed={on}
+          >
+            <m.span
+              className="rating-star"
+              initial={false}
+              animate={{ scale: on ? [1, 1.3, 1] : 1 }}
+              transition={{
+                duration: 0.32,
+                ease: 'easeOut',
+                delay: on && raise ? Math.max(0, n - raise.from - 1) * 0.045 : 0,
+              }}
+            >
+              <Star aria-hidden="true" />
+            </m.span>
+            {raise?.star === n && !calm ? (
+              <span key={raise.id} className="rating-sparks" aria-hidden="true">
+                {SPARKS.map((deg) => {
+                  const [dx, dy] = [
+                    Math.cos((deg * Math.PI) / 180),
+                    Math.sin((deg * Math.PI) / 180),
+                  ];
+                  return (
+                    <m.span
+                      key={deg}
+                      className="rating-spark"
+                      initial={{ opacity: 1, x: dx * SPARK_FROM, y: dy * SPARK_FROM, scale: 1 }}
+                      animate={{ opacity: 0, x: dx * SPARK_TO, y: dy * SPARK_TO, scale: 0.5 }}
+                      transition={{ duration: 0.45, ease: 'easeOut' }}
+                    />
+                  );
+                })}
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
     </div>
   );
 }

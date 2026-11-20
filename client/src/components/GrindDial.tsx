@@ -1,5 +1,6 @@
 import { Minus, Plus } from 'lucide-react';
 import { snapToScale, type Grinder } from '@brewlab/shared';
+import { SlidingNumber } from './SlidingNumber';
 
 interface Props {
   grinder: Grinder | null;
@@ -97,20 +98,26 @@ export default function GrindDial({
             <Minus aria-hidden="true" />
           </button>
         ) : null}
-        <input
-          className="simple-number grind-dial-number"
-          type="number"
-          inputMode="decimal"
-          placeholder="—"
-          aria-labelledby={labelledBy}
-          aria-describedby={describedBy}
-          aria-invalid={problem ? true : undefined}
-          step={scale?.kind === 'stepless' ? 'any' : (scale?.step ?? 1)}
-          min={scale?.min}
-          max={scale?.max}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-        />
+        {/* The input is what you type into and what assistive tech reads. Over
+            it, while it isn't focused, the same number as rolling digits, so
+            a nudge or a slide turns the dial. Typing gets the plain input. */}
+        <div className={`grind-dial-field${value === '' ? '' : ' has-value'}`}>
+          <input
+            className="simple-number grind-dial-number"
+            type="number"
+            inputMode="decimal"
+            placeholder="—"
+            aria-labelledby={labelledBy}
+            aria-describedby={describedBy}
+            aria-invalid={problem ? true : undefined}
+            step={scale?.kind === 'stepless' ? 'any' : (scale?.step ?? 1)}
+            min={scale?.min}
+            max={scale?.max}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+          <SlidingNumber value={value} className="grind-dial-rolling" />
+        </div>
         {scale ? (
           <button
             type="button"

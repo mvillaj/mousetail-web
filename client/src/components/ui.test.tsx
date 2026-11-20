@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { Confidence, Field, Modal, ModalHeaderSlot, RatingInput, Stars, Working } from './ui';
 
@@ -70,6 +71,36 @@ describe('RatingInput', () => {
       'aria-pressed',
       'false',
     );
+  });
+
+  describe('the burst', () => {
+    function Rating({ start = null }: { start?: number | null }) {
+      const [value, setValue] = useState<number | null>(start);
+      return <RatingInput value={value} onChange={setValue} />;
+    }
+    const sparksOn = (n: number) =>
+      screen.getByRole('button', { name: `${n} stars` }).querySelectorAll('.rating-spark');
+
+    it('throws sparks from the star that raised the rating', async () => {
+      const { container } = render(<Rating />);
+      expect(container.querySelectorAll('.rating-spark')).toHaveLength(0);
+      await userEvent.click(screen.getByRole('button', { name: '4 stars' }));
+      expect(sparksOn(4).length).toBeGreaterThan(0);
+      expect(container.querySelectorAll('.rating-spark')).toHaveLength(sparksOn(4).length);
+    });
+
+    it('stays quiet when the rating goes down or is cleared', async () => {
+      const { container } = render(<Rating start={4} />);
+      await userEvent.click(screen.getByRole('button', { name: '2 stars' }));
+      expect(container.querySelectorAll('.rating-spark')).toHaveLength(0);
+      await userEvent.click(screen.getByRole('button', { name: '2 stars' }));
+      expect(container.querySelectorAll('.rating-spark')).toHaveLength(0);
+    });
+
+    it('does not celebrate a rating that was already there', () => {
+      const { container } = render(<Rating start={5} />);
+      expect(container.querySelectorAll('.rating-spark')).toHaveLength(0);
+    });
   });
 });
 

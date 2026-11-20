@@ -658,6 +658,10 @@ h3 {
   padding-top: 0;
 }
 .nav a {
+  position: relative;
+  /* Its own stacking context, so the hover pill can sit under the label but
+     over the link's own (active) background. */
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -672,8 +676,16 @@ h3 {
     color 0.15s;
 }
 .nav a:hover {
-  background: var(--wash);
   color: var(--text);
+}
+/* The hover pill (Nav in App.tsx): one per nav, gliding between links. */
+.nav-hover {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--wash);
+  pointer-events: none;
 }
 /* Mixed into the page ground rather than --surface: --action-soft is a tint of
    white, and the ground already carries the finish's cast, so the two land on
@@ -2116,6 +2128,7 @@ button.list-item[aria-busy='true'] .working-bars {
   gap: 4px;
 }
 .rating-input button {
+  position: relative;
   background: none;
   border: none;
   cursor: pointer;
@@ -2137,6 +2150,25 @@ button.list-item[aria-busy='true'] .working-bars {
 }
 .rating-input button.on {
   color: var(--star);
+}
+.rating-star {
+  display: block;
+}
+/* The burst when a click raises the rating (RatingInput in ui.tsx). */
+.rating-sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.rating-spark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: var(--star);
 }
 
 /* Modal */
@@ -3188,6 +3220,49 @@ button.list-item[aria-busy='true'] .working-bars {
   font-size: 2rem;
   font-weight: 700;
   color: var(--action-ink);
+}
+/* The rolling digits sit exactly over the input. While it isn't focused, the
+   input's own text is clear and the digits show; focused, it's a plain input
+   for typing. */
+.grind-dial-field {
+  position: relative;
+  max-width: 7.5rem;
+}
+.grind-dial-field.has-value:not(:focus-within) .grind-dial-number {
+  color: transparent;
+}
+.grind-dial-rolling {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--action-ink);
+  pointer-events: none;
+}
+.grind-dial-field:focus-within .grind-dial-rolling {
+  visibility: hidden;
+}
+
+/* A digit is a window one character tall onto a reel of 0–9. */
+.sliding-number {
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2em;
+  white-space: nowrap;
+}
+.sliding-digit {
+  display: inline-block;
+  height: 1.2em;
+  line-height: 1.2em;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.sliding-reel {
+  display: flex;
+  flex-direction: column;
 }
 .grind-dial-step {
   display: grid;

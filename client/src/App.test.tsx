@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { LazyMotion, domMax } from 'motion/react';
 import { Link, MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App, { MoreSheet, navFor } from './App';
@@ -79,6 +80,44 @@ describe('MoreSheet', () => {
     expect(document.documentElement.style.overflow).toBe('hidden');
     unmount();
     expect(document.documentElement.style.overflow).toBe('');
+  });
+});
+
+describe('nav hover', () => {
+  // With motion's engine loaded, as in the app, so fades can finish.
+  function renderNav() {
+    const groups = navFor({ profiling: 'pressure', cloud: 'fellow' });
+    render(
+      <LazyMotion features={domMax}>
+        <MemoryRouter>
+          <ThemeProvider>
+            <MoreSheet groups={groups} onClose={vi.fn()} />
+          </ThemeProvider>
+        </MemoryRouter>
+      </LazyMotion>,
+    );
+    return screen.getByRole('navigation', { name: 'Main' });
+  }
+  const pillIn = (name: string) => screen.getByRole('link', { name }).querySelector('.nav-hover');
+
+  it('puts one pill under the link the pointer is over, and moves it along', async () => {
+    const nav = renderNav();
+    expect(nav.querySelector('.nav-hover')).toBeNull();
+
+    fireEvent.mouseEnter(screen.getByRole('link', { name: 'Grinders' }));
+    expect(pillIn('Grinders')).not.toBeNull();
+
+    // The old pill hands over with a layout animation, which needs a real
+    // browser to finish; e2e/signed-in/motion.spec.ts checks it settles to one.
+    fireEvent.mouseEnter(screen.getByRole('link', { name: 'Machines' }));
+    expect(pillIn('Machines')).not.toBeNull();
+  });
+
+  it('lets the pill fade away when the pointer leaves the nav', async () => {
+    const nav = renderNav();
+    fireEvent.mouseEnter(screen.getByRole('link', { name: 'Grinders' }));
+    fireEvent.mouseLeave(nav);
+    await waitFor(() => expect(nav.querySelector('.nav-hover')).toBeNull());
   });
 });
 
