@@ -3056,7 +3056,10 @@ button.list-item[aria-busy='true'] .working-bars {
   z-index: 70;
   display: grid;
   gap: 8px;
-  width: min(440px, calc(100% - 32px));
+  /* As wide as what it says, so the padding is even on both sides; a longer
+     message wraps at the cap rather than stretching across the screen. */
+  width: max-content;
+  max-width: min(480px, calc(100% - 32px));
   pointer-events: none;
 }
 .app-status > * {
@@ -3064,12 +3067,33 @@ button.list-item[aria-busy='true'] .working-bars {
   margin: 0;
   box-shadow: 0 10px 28px -14px rgba(20, 12, 7, 0.45);
 }
+/* One row: icon, message, then any action, all on the same centre line. When
+   the message wraps it wraps beside the action, never pushing it underneath. */
+.app-status .banner.with-icon {
+  align-items: center;
+}
+.app-status .banner-icon {
+  margin-top: 0;
+}
 .app-status .banner.with-icon > div {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 16px;
+}
+.app-status .banner.with-icon > div > span {
+  flex: 1;
+  text-wrap: pretty;
+}
+/* An ink wash, not --wash: in dark --wash is --surface-2, the banner's own
+   fill, and the button would vanish into it. In light the values are the same. */
+.app-status .btn {
+  flex: none;
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+}
+.app-status .btn:hover {
+  background: color-mix(in oklab, var(--text) 14%, transparent);
 }
 @media (max-width: 860px) {
   .app-status {
