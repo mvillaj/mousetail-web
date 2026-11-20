@@ -113,3 +113,34 @@ test('under reduced motion, rating throws no sparks', async ({ page }) => {
   await expect(four).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.rating-spark')).toHaveCount(0);
 });
+
+test('in forced colours, the grind dial is the plain input, shown once', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'active' });
+  await openShotForm(page);
+  await page.getByRole('button', { name: 'Raise the setting' }).click();
+  await expect(page.getByLabel(/where was the grinder set/i)).not.toHaveValue('');
+  await expect(page.locator('.grind-dial-rolling')).toBeHidden();
+});
+
+test('without the motion engine, hover still shows and nothing is left frozen', async ({
+  page,
+}) => {
+  // The engine's chunk never arrives (in dev it's /src/lib/motionFeatures.ts).
+  await page.route('**/motionFeatures*', (route) => route.abort());
+  await openShotForm(page);
+  await expect(page.locator('html')).not.toHaveAttribute('data-motion', 'ready');
+
+  const four = page.getByRole('button', { name: '4 stars' });
+  await four.click();
+  await expect(four).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.rating-spark')).toHaveCount(0);
+
+  await page.keyboard.press('Escape');
+  const grinders = page.getByRole('navigation', { name: 'Main' }).getByRole('link', {
+    name: 'Grinders',
+  });
+  await grinders.hover();
+  await expect
+    .poll(() => grinders.evaluate((a) => getComputedStyle(a).backgroundColor))
+    .not.toBe('rgba(0, 0, 0, 0)');
+});

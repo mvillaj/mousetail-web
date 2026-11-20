@@ -678,6 +678,11 @@ h3 {
 .nav a:hover {
   color: var(--text);
 }
+/* Until motion's engine is in (lib/motion.ts), the gliding pill can't fade in,
+   so hover gets a plain background as it did before. */
+:root:not([data-motion='ready']) .nav a:hover {
+  background: var(--wash);
+}
 /* The hover pill (Nav in App.tsx): one per nav, gliding between links. */
 .nav-hover {
   position: absolute;
@@ -3245,6 +3250,13 @@ button.list-item[aria-busy='true'] .working-bars {
 }
 .grind-dial-field:focus-within .grind-dial-rolling {
   visibility: hidden;
+}
+/* Forced colours (Windows High Contrast) repaint the input's clear text in a
+   system colour, so the digits would show twice. The plain input it is. */
+@media (forced-colors: active) {
+  .grind-dial-rolling {
+    display: none;
+  }
 }
 
 /* A digit is a window one character tall onto a reel of 0–9. */

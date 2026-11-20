@@ -14,6 +14,7 @@ import * as m from 'motion/react-m';
 import { CircleCheck, CircleDot, CircleHelp, Star, X, type LucideIcon } from 'lucide-react';
 import type { Suggestion } from '@brewlab/shared';
 import { CONFIDENCE_LABEL } from '../lib/coach';
+import { motionReady } from '../lib/motion';
 
 const LABELABLE = new Set(['input', 'select', 'textarea']);
 
@@ -104,17 +105,25 @@ export function RatingInput({
   value: number | null;
   onChange: (v: number | null) => void;
 }) {
-  // Raising the rating is worth a small celebration: the stars that light up
-  // pop in turn, and the one you clicked throws off a few sparks. Lowering or
-  // clearing it, and anything not from a click, stays quiet. `id` restarts the
-  // burst on every raise.
-  const [raise, setRaise] = useState<{ star: number; from: number; id: number } | null>(null);
+  // Raising the rating with a click is worth a small celebration: the stars
+  // that click lit pop in turn, and the one you clicked throws off a few
+  // sparks. Lowering or clearing it, and any change not from a click, stays
+  // still. `id` restarts the burst on every raise; `sparks` is decided at the
+  // click, so they never turn up later (say, once motion's engine arrives).
+  const [raise, setRaise] = useState<{
+    star: number;
+    from: number;
+    id: number;
+    sparks: boolean;
+  } | null>(null);
   const calm = useReducedMotion();
 
   return (
     <div className="rating-input">
       {[1, 2, 3, 4, 5].map((n) => {
         const on = value != null && n <= value;
+        // Lit by the latest click, and still showing what that click chose.
+        const popping = raise != null && value === raise.star && n > raise.from && n <= raise.star;
         return (
           <button
             key={n}
@@ -123,7 +132,9 @@ export function RatingInput({
             onClick={() => {
               const next = value === n ? null : n;
               if (next != null && next > (value ?? 0)) {
-                setRaise((r) => ({ star: n, from: value ?? 0, id: (r?.id ?? 0) + 1 }));
+                // No sparks without the engine: they'd sit frozen where they start.
+                const sparks = !calm && motionReady();
+                setRaise((r) => ({ star: n, from: value ?? 0, id: (r?.id ?? 0) + 1, sparks }));
               }
               onChange(next);
             }}
@@ -132,17 +143,18 @@ export function RatingInput({
           >
             <m.span
               className="rating-star"
+              data-pop={popping || undefined}
               initial={false}
-              animate={{ scale: on ? [1, 1.3, 1] : 1 }}
+              animate={{ scale: popping ? [1, 1.3, 1] : 1 }}
               transition={{
                 duration: 0.32,
                 ease: 'easeOut',
-                delay: on && raise ? Math.max(0, n - raise.from - 1) * 0.045 : 0,
+                delay: popping ? (n - raise.from - 1) * 0.045 : 0,
               }}
             >
               <Star aria-hidden="true" />
             </m.span>
-            {raise?.star === n && !calm ? (
+            {raise?.star === n && raise.sparks ? (
               <span key={raise.id} className="rating-sparks" aria-hidden="true">
                 {SPARKS.map((deg) => {
                   const [dx, dy] = [
