@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { ViewTransition, useEffect, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
   BookOpen,
@@ -291,11 +291,13 @@ function Shell({ children }: { children: React.ReactNode }) {
   const nav = navFor(capabilities);
   const [more, setMore] = useState(false);
 
-  // Pages ease in when you move between them, but not on the first paint: the
-  // app's launch stays as seamless as it is.
+  // Following a link is a view transition: BrowserRouter applies location
+  // changes inside startTransition, and a new key swaps the old page out and
+  // the new one in. Back and forward come from popstate, which React renders at
+  // once so scroll restores, so those just change pages, as native back does.
+  // The first paint isn't a transition, so the app's launch stays as seamless
+  // as it is. Browsers without view transitions just change pages.
   const { pathname } = useLocation();
-  const route = useRef({ pathname, navigated: false });
-  if (route.current.pathname !== pathname) route.current = { pathname, navigated: true };
 
   return (
     <div className="shell">
@@ -312,12 +314,11 @@ function Shell({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="main">
-        <div
-          key={pathname}
-          className={route.current.navigated ? 'route-view is-entering' : 'route-view'}
-        >
-          {children}
-        </div>
+        {/* default="none": a transition that keeps the page, like a search
+            param change, leaves it alone. */}
+        <ViewTransition key={pathname} enter="route-enter" exit="route-exit" default="none">
+          <div className="route-view">{children}</div>
+        </ViewTransition>
       </main>
 
       <TabBar onMore={() => setMore(true)} />

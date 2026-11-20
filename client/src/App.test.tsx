@@ -136,6 +136,8 @@ describe('first-run redirect', () => {
   });
 });
 
+// The view transition itself needs a real browser: e2e/signed-in/navigation.spec.ts.
+// jsdom has none, so React just swaps pages here, which is what this checks.
 describe('page transitions', () => {
   const renderApp = () =>
     render(
@@ -147,19 +149,14 @@ describe('page transitions', () => {
       </MemoryRouter>,
     );
 
-  it('does not animate the first paint', () => {
+  it('swaps the old page for the new one', async () => {
     authUser = { displayName: 'Old', onboardedAt: '2026-10-01T00:00:00.000Z' };
     const { container } = renderApp();
-    expect(container.querySelector('.route-view')).not.toBeNull();
-    expect(container.querySelector('.is-entering')).toBeNull();
-  });
-
-  it('eases the next page in when navigating', () => {
-    authUser = { displayName: 'Old', onboardedAt: '2026-10-01T00:00:00.000Z' };
-    const { container } = renderApp();
+    expect(screen.getByRole('heading', { name: 'Dashboard page' })).toBeTruthy();
     fireEvent.click(screen.getByRole('link', { name: 'Go' }));
-    expect(screen.getByRole('heading', { name: 'Getting started page' })).toBeTruthy();
-    expect(container.querySelector('.route-view.is-entering')).not.toBeNull();
+    expect(await screen.findByRole('heading', { name: 'Getting started page' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Dashboard page' })).toBeNull();
+    expect(container.querySelectorAll('.route-view')).toHaveLength(1);
   });
 });
 
