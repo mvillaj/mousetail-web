@@ -52,6 +52,8 @@ describe('Landing', () => {
 
     const photo = within(splash).getByRole('img', { name: /espresso running/i });
     expect(photo).toHaveAttribute('srcset', expect.stringContaining('2000w'));
+    // The splash photo is the largest paint, so the browser fetches it first.
+    expect(photo).toHaveAttribute('fetchpriority', 'high');
     // WebP first, with the JPEG srcset above as the fallback.
     const webp = photo.closest('picture')!.querySelector('source[type="image/webp"]');
     expect(webp).toHaveAttribute('srcset', expect.stringContaining('.webp 2000w'));
