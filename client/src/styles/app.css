@@ -2921,14 +2921,12 @@ button.list-item[aria-busy='true'] .working-bars {
   transform-origin: bottom;
   animation: pour 0.9s var(--ease-out) both;
 }
-/* Moving between pages (<ViewTransition> in Shell): the old page is gone in a
-   blink while the new one eases up into place, so it never lingers and
-   navigation never feels slower. These animate snapshots, not the page, so
-   nothing here can trap position: fixed modals.
-
-   Only the page is captured. The shell stays live and swaps at once, so the
-   nav and tab bar never blink. Nothing animates unless named below, and
-   nothing does under reduced motion. */
+/* ── View transitions: app-wide baseline ─────────────────────────────────────
+   The document itself is never captured, and no view transition animates
+   unless a rule below names it. A <ViewTransition> added anywhere later starts
+   from here and opts in with its own classes. Browsers without view
+   transitions, or without view-transition classes (Chrome before 125, Safari
+   before 18.2), simply skip the animation. */
 :root {
   view-transition-name: none;
 }
@@ -2937,11 +2935,22 @@ button.list-item[aria-busy='true'] .working-bars {
 ::view-transition-new(*) {
   animation: none;
 }
+
+/* Moving between pages (<ViewTransition> in Shell): the old page is gone in a
+   blink while the new one eases up into place, so it never lingers and
+   navigation never feels slower. These animate snapshots, not the page, so
+   nothing here can trap position: fixed modals, and the shell stays live, so
+   the nav and tab bar never blink.
+
+   Back and forward (data-navigation="pop", set by Shell) stay still, as native
+   back does, and so does everything under reduced motion. While a transition
+   runs React holds other updates, so data that lands mid-transition shows when
+   it ends: at most the 0.26s below. */
 @media (prefers-reduced-motion: no-preference) {
-  ::view-transition-old(.route-exit) {
+  :root:not([data-navigation='pop'])::view-transition-old(.route-exit) {
     animation: route-out 0.12s ease-in both;
   }
-  ::view-transition-new(.route-enter) {
+  :root:not([data-navigation='pop'])::view-transition-new(.route-enter) {
     animation: route-in 0.26s var(--ease-out) both;
   }
 }

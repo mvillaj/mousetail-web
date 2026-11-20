@@ -35,10 +35,12 @@ test('following a link is a view transition, but launch is not', async ({ page }
   await expect(page).toHaveURL(/\/shots$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Shot log' })).toBeVisible();
   await expect.poll(() => transitions(page)).toBe(1);
+  await expect(page.locator('html')).toHaveAttribute('data-navigation', 'push');
 
-  // Back is popstate, which React renders at once, transition or not. All
-  // that matters is that it lands on the old page.
+  // Back is popstate. React may or may not run it as a transition, so the
+  // page marks it and the CSS keeps it still either way.
   await page.goBack();
   await expect(page.getByRole('heading', { level: 1, name: /, E2E$/ })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1, name: 'Shot log' })).toHaveCount(0);
+  await expect(page.locator('html')).toHaveAttribute('data-navigation', 'pop');
 });

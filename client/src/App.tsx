@@ -1,5 +1,13 @@
-import { ViewTransition, useEffect, useState } from 'react';
-import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { ViewTransition, useEffect, useLayoutEffect, useState } from 'react';
+import {
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+} from 'react-router-dom';
 import {
   BookOpen,
   Bean,
@@ -291,7 +299,20 @@ function Shell({ children }: { children: React.ReactNode }) {
   const nav = navFor(capabilities);
   const [more, setMore] = useState(false);
 
-  const { pathname } = useLocation();
+  const { pathname, key } = useLocation();
+  const navigationType = useNavigationType();
+
+  // Says how each page arrived, for the page transition's CSS: back and
+  // forward (popstate) stay still, as native back does. React usually renders
+  // those at once anyway, but not always, so this makes it certain. A layout
+  // effect, so it's in place before the transition's animations start.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    root.dataset.navigation = navigationType.toLowerCase();
+    return () => {
+      delete root.dataset.navigation;
+    };
+  }, [navigationType, key]);
 
   return (
     <div className="shell">
@@ -309,11 +330,10 @@ function Shell({ children }: { children: React.ReactNode }) {
 
       <main className="main">
         {/* A new key per path makes following a link a view transition, since
-            BrowserRouter updates inside startTransition. Back and forward
-            (popstate) and the first paint render at once, as native back does.
-            default="none" leaves updates that keep the page alone. The div
-            gives the transition one element to capture, whatever the page
-            renders. */}
+            BrowserRouter updates inside startTransition; the first paint
+            isn't one. default="none" leaves updates that keep the page alone.
+            The div gives the transition one element to capture, whatever the
+            page renders. */}
         <ViewTransition key={pathname} enter="route-enter" exit="route-exit" default="none">
           <div>{children}</div>
         </ViewTransition>
