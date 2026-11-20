@@ -69,6 +69,11 @@ export interface Coffee {
   isPublic: boolean;
   clonedFromId: string | null;
   createdAt: string;
+  /**
+   * When its owner pinned it to the top of their shelf, or null. Personal: it
+   * is only ever filled in for the owner, never on someone else's view.
+   */
+  pinnedAt: string | null;
   /** Aggregates, present on list/detail reads. */
   shotCount?: number;
   avgRating?: number | null;

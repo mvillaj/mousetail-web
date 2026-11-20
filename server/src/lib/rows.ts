@@ -87,6 +87,7 @@ export const toCoffee = (r: Row): Coffee => ({
   isPublic: Boolean(r.is_public),
   clonedFromId: r.cloned_from_id ?? null,
   createdAt: r.created_at,
+  pinnedAt: r.pinned_at ?? null,
   shotCount: r.shot_count ?? undefined,
   avgRating: r.avg_rating ?? null,
   wellRatedShotCount: r.well_rated_count ?? undefined,

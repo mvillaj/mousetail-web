@@ -1620,6 +1620,34 @@ h3 {
 .grid-2 {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
+
+/* My coffees: the pinned group on top, then the rest of the shelf. auto-fill,
+   not grid-2's auto-fit: a lone card keeps its column's width instead of
+   stretching across the row, so a card is the same size in either group and
+   can glide between them. Phones still get one column (.grid-2 below). */
+.shelf-grid {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+.shelf-group + .shelf-group {
+  margin-top: 28px;
+}
+.banner + .shelf-group {
+  margin-top: 16px;
+}
+.shelf-label {
+  margin: 0 0 12px;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-faint);
+}
+.pin-toggle[aria-pressed='true'] {
+  color: var(--action);
+}
+.pin-toggle[aria-pressed='true'] svg {
+  fill: currentColor;
+}
 .grid-3 {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }

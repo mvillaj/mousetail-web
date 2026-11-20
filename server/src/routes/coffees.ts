@@ -1,8 +1,9 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { DIALED_IN_MIN_RATING, coffeeInputSchema } from '@brewlab/shared';
 import { bool, db, id, nowIso } from '../lib/db';
 import { optionalAuth, requireAuth, type AuthedRequest } from '../lib/auth';
 import { required, toCoffee } from '../lib/rows';
+import { SHELF_ORDER, forViewer, setPinned } from '../lib/pins';
 
 export const coffeeRouter: Router = Router();
 
@@ -34,7 +35,7 @@ coffeeRouter.get('/public', optionalAuth, (req: AuthedRequest, res) => {
       `${SELECT} WHERE ${clauses.join(' AND ')} ORDER BY shot_count DESC, c.created_at DESC LIMIT 200`,
     )
     .all(...(params as any[])) as any[];
-  res.json(rows.map(toCoffee));
+  res.json(rows.map((r) => forViewer(toCoffee(r), req.userId)));
 });
 
 coffeeRouter.get('/:id', optionalAuth, (req: AuthedRequest, res) => {
@@ -43,14 +44,14 @@ coffeeRouter.get('/:id', optionalAuth, (req: AuthedRequest, res) => {
     res.status(404).json({ error: 'Coffee not found' });
     return;
   }
-  res.json(toCoffee(row));
+  res.json(forViewer(toCoffee(row), req.userId));
 });
 
 coffeeRouter.use(requireAuth);
 
 coffeeRouter.get('/', (req: AuthedRequest, res) => {
   const rows = db
-    .prepare(`${SELECT} WHERE c.owner_id = ? ORDER BY c.created_at DESC`)
+    .prepare(`${SELECT} WHERE c.owner_id = ? ORDER BY ${SHELF_ORDER}`)
     .all(req.userId!) as any[];
   res.json(rows.map(toCoffee));
 });
@@ -144,6 +145,20 @@ coffeeRouter.delete('/:id', (req: AuthedRequest, res) => {
   db.prepare('DELETE FROM coffees WHERE id = ? AND owner_id = ?').run(req.params.id, req.userId!);
   res.status(204).end();
 });
+
+/** Pin a coffee to the top of my shelf, or unpin it. Mine only. */
+function pin(pinned: boolean) {
+  return (req: AuthedRequest, res: Response) => {
+    const coffeeId = String(req.params.id);
+    if (!setPinned(db, coffeeId, req.userId!, pinned, nowIso())) {
+      res.status(404).json({ error: 'Coffee not found' });
+      return;
+    }
+    res.json(toCoffee(required(db.prepare(`${SELECT} WHERE c.id = ?`).get(coffeeId), 'coffee')));
+  };
+}
+coffeeRouter.put('/:id/pin', pin(true));
+coffeeRouter.delete('/:id/pin', pin(false));
 
 /** Copy someone else's published bag onto my shelf, private by default. */
 coffeeRouter.post('/:id/clone', (req: AuthedRequest, res) => {
