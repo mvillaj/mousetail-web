@@ -735,8 +735,7 @@ function Splash() {
           srcSet={`${pour640} 640w, ${pour1080} 1080w, ${pour1600} 1600w, ${pour2000} 2000w`}
           sizes="100vw"
           alt="Espresso running from a portafilter into a glass in one thin, amber stream"
-          // React 18 only passes the lowercase attribute through to the DOM.
-          {...{ fetchpriority: 'high' }}
+          fetchPriority="high"
         />
       </picture>
       <div className="splash-scrim" aria-hidden="true" />
