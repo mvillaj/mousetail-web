@@ -291,12 +291,6 @@ function Shell({ children }: { children: React.ReactNode }) {
   const nav = navFor(capabilities);
   const [more, setMore] = useState(false);
 
-  // Following a link is a view transition: BrowserRouter applies location
-  // changes inside startTransition, and a new key swaps the old page out and
-  // the new one in. Back and forward come from popstate, which React renders at
-  // once so scroll restores, so those just change pages, as native back does.
-  // The first paint isn't a transition, so the app's launch stays as seamless
-  // as it is. Browsers without view transitions just change pages.
   const { pathname } = useLocation();
 
   return (
@@ -314,10 +308,14 @@ function Shell({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="main">
-        {/* default="none": a transition that keeps the page, like a search
-            param change, leaves it alone. */}
+        {/* A new key per path makes following a link a view transition, since
+            BrowserRouter updates inside startTransition. Back and forward
+            (popstate) and the first paint render at once, as native back does.
+            default="none" leaves updates that keep the page alone. The div
+            gives the transition one element to capture, whatever the page
+            renders. */}
         <ViewTransition key={pathname} enter="route-enter" exit="route-exit" default="none">
-          <div className="route-view">{children}</div>
+          <div>{children}</div>
         </ViewTransition>
       </main>
 

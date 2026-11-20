@@ -1,23 +1,27 @@
 import { setupClerkTestingToken } from '@clerk/testing/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
+declare global {
+  interface Window {
+    __viewTransitions: number;
+  }
+}
+
 test.beforeEach(async ({ page }) => {
   await setupClerkTestingToken({ page });
   // Count the view transitions React starts, without changing what they do.
   await page.addInitScript(() => {
-    const w = window as unknown as { __viewTransitions: number };
-    w.__viewTransitions = 0;
+    window.__viewTransitions = 0;
     const start = document.startViewTransition?.bind(document);
     if (!start) return;
-    document.startViewTransition = ((arg: Parameters<typeof start>[0]) => {
-      w.__viewTransitions += 1;
-      return start(arg);
+    document.startViewTransition = ((...args: Parameters<typeof start>) => {
+      window.__viewTransitions += 1;
+      return start(...args);
     }) as typeof document.startViewTransition;
   });
 });
 
-const transitions = (page: Page) =>
-  page.evaluate(() => (window as unknown as { __viewTransitions: number }).__viewTransitions);
+const transitions = (page: Page) => page.evaluate(() => window.__viewTransitions);
 
 test('following a link is a view transition, but launch is not', async ({ page }) => {
   await page.goto('/');

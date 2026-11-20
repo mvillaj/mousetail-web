@@ -151,12 +151,11 @@ describe('page transitions', () => {
 
   it('swaps the old page for the new one', async () => {
     authUser = { displayName: 'Old', onboardedAt: '2026-10-01T00:00:00.000Z' };
-    const { container } = renderApp();
+    renderApp();
     expect(screen.getByRole('heading', { name: 'Dashboard page' })).toBeTruthy();
     fireEvent.click(screen.getByRole('link', { name: 'Go' }));
     expect(await screen.findByRole('heading', { name: 'Getting started page' })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Dashboard page' })).toBeNull();
-    expect(container.querySelectorAll('.route-view')).toHaveLength(1);
   });
 });
 

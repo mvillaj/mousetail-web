@@ -2921,20 +2921,20 @@ button.list-item[aria-busy='true'] .working-bars {
   transform-origin: bottom;
   animation: pour 0.9s var(--ease-out) both;
 }
-/* Moving between pages is a view transition (<ViewTransition> in Shell): the
-   old page is gone in a blink while the new one eases up into place, so it
-   never lingers and navigation never feels slower. These animate snapshots,
-   not the page itself, so nothing here can trap position: fixed modals.
+/* Moving between pages (<ViewTransition> in Shell): the old page is gone in a
+   blink while the new one eases up into place, so it never lingers and
+   navigation never feels slower. These animate snapshots, not the page, so
+   nothing here can trap position: fixed modals.
 
-   Only the page moves. The rest of the shell (root) swaps at once, so the nav
-   and tab bar never blink. The page's own snapshots still need their
-   duration: a view transition takes clicks until its last animation ends. */
-::view-transition-old(root) {
-  /* Hidden, not just still: two still root snapshots blend into each other,
-     so the old nav highlight would show through the new one. */
-  display: none;
+   Only the page is captured. The shell stays live and swaps at once, so the
+   nav and tab bar never blink. Nothing animates unless named below, and
+   nothing does under reduced motion. */
+:root {
+  view-transition-name: none;
 }
-::view-transition-new(root) {
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
   animation: none;
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -2943,16 +2943,6 @@ button.list-item[aria-busy='true'] .working-bars {
   }
   ::view-transition-new(.route-enter) {
     animation: route-in 0.26s var(--ease-out) both;
-  }
-}
-/* Reduced motion: the new page is simply there. */
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-new(*) {
-    animation: none !important;
-  }
-  ::view-transition-old(*) {
-    display: none;
   }
 }
 @keyframes route-out {
