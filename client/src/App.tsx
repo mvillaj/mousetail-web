@@ -1,5 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { ViewTransition, useEffect, useLayoutEffect, useState } from 'react';
+import {
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+} from 'react-router-dom';
 import {
   BookOpen,
   Bean,
@@ -291,11 +299,20 @@ function Shell({ children }: { children: React.ReactNode }) {
   const nav = navFor(capabilities);
   const [more, setMore] = useState(false);
 
-  // Pages ease in when you move between them, but not on the first paint: the
-  // app's launch stays as seamless as it is.
-  const { pathname } = useLocation();
-  const route = useRef({ pathname, navigated: false });
-  if (route.current.pathname !== pathname) route.current = { pathname, navigated: true };
+  const { pathname, key } = useLocation();
+  const navigationType = useNavigationType();
+
+  // Says how each page arrived, for the page transition's CSS: back and
+  // forward (popstate) stay still, as native back does. React usually renders
+  // those at once anyway, but not always, so this makes it certain. A layout
+  // effect, so it's in place before the transition's animations start.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    root.dataset.navigation = navigationType.toLowerCase();
+    return () => {
+      delete root.dataset.navigation;
+    };
+  }, [navigationType, key]);
 
   return (
     <div className="shell">
@@ -312,12 +329,14 @@ function Shell({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="main">
-        <div
-          key={pathname}
-          className={route.current.navigated ? 'route-view is-entering' : 'route-view'}
-        >
-          {children}
-        </div>
+        {/* A new key per path makes following a link a view transition, since
+            BrowserRouter updates inside startTransition; the first paint
+            isn't one. default="none" leaves updates that keep the page alone.
+            The div gives the transition one element to capture, whatever the
+            page renders. */}
+        <ViewTransition key={pathname} enter="route-enter" exit="route-exit" default="none">
+          <div>{children}</div>
+        </ViewTransition>
       </main>
 
       <TabBar onMore={() => setMore(true)} />

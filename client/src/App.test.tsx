@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { Link, MemoryRouter, useLocation } from 'react-router-dom';
+import { Link, MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App, { MoreSheet, navFor } from './App';
 import { LOADING_DELAY_MS } from './lib/delay';
@@ -136,30 +136,50 @@ describe('first-run redirect', () => {
   });
 });
 
+// The view transition itself needs a real browser: e2e/signed-in/navigation.spec.ts.
+// jsdom has none, so React just swaps pages here, which is what this checks.
 describe('page transitions', () => {
+  function Back() {
+    const navigate = useNavigate();
+    return <button onClick={() => navigate(-1)}>Back</button>;
+  }
+
   const renderApp = () =>
     render(
       <MemoryRouter initialEntries={['/']}>
         <ThemeProvider>
           <App />
           <Link to="/getting-started">Go</Link>
+          <Back />
         </ThemeProvider>
       </MemoryRouter>,
     );
 
-  it('does not animate the first paint', () => {
+  it('swaps the old page for the new one', async () => {
     authUser = { displayName: 'Old', onboardedAt: '2026-10-01T00:00:00.000Z' };
-    const { container } = renderApp();
-    expect(container.querySelector('.route-view')).not.toBeNull();
-    expect(container.querySelector('.is-entering')).toBeNull();
+    renderApp();
+    expect(screen.getByRole('heading', { name: 'Dashboard page' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('link', { name: 'Go' }));
+    expect(await screen.findByRole('heading', { name: 'Getting started page' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Dashboard page' })).toBeNull();
   });
 
-  it('eases the next page in when navigating', () => {
+  it('tells the CSS how each page arrived, so back and forward stay still', async () => {
     authUser = { displayName: 'Old', onboardedAt: '2026-10-01T00:00:00.000Z' };
-    const { container } = renderApp();
+    const { unmount } = renderApp();
+    const navigation = () => document.documentElement.dataset.navigation;
+
     fireEvent.click(screen.getByRole('link', { name: 'Go' }));
-    expect(screen.getByRole('heading', { name: 'Getting started page' })).toBeTruthy();
-    expect(container.querySelector('.route-view.is-entering')).not.toBeNull();
+    await screen.findByRole('heading', { name: 'Getting started page' });
+    expect(navigation()).toBe('push');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await screen.findByRole('heading', { name: 'Dashboard page' });
+    expect(navigation()).toBe('pop');
+
+    // Signed out, there's no shell, and nothing left for the CSS to read.
+    unmount();
+    expect(navigation()).toBeUndefined();
   });
 });
 
