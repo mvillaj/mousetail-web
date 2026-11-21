@@ -769,6 +769,125 @@ h3 {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Who's signed in, as an initial: all the collapsed rail has room for. */
+.account-initial {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--wash);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* ── The collapsible sidebar (desktop) ───────────────────────────────────────
+   It rests as a rail of icons. When you mean to use it (useHoverIntent in
+   App.tsx sets data-expanded), it widens over the page rather than pushing
+   it: the grid keeps the rail's width, so nothing underneath moves. Labels,
+   section headings and the account row fade but stay in the page, so screen
+   readers and link names are unchanged. While the theme pop-up is open it
+   stays wide, so the pop-up is never clipped. */
+@media (min-width: 861px) {
+  .shell {
+    grid-template-columns: var(--rail) 1fr;
+  }
+  :root {
+    --rail: 72px;
+    --rail-open: 248px;
+  }
+  .sidebar {
+    width: var(--rail);
+    padding-left: calc(14px + env(safe-area-inset-left));
+    padding-right: 14px;
+    z-index: 20;
+    background: var(--bg);
+    transition:
+      width 0.24s var(--ease-out),
+      box-shadow 0.24s var(--ease-out);
+  }
+  .sidebar:is([data-expanded], :has(.settings-pop)) {
+    width: var(--rail-open);
+    box-shadow: var(--shadow-pop);
+  }
+
+  /* Anything wider than the rail is cut at its own edge, not spilled. */
+  .sidebar .nav a,
+  .sidebar .nav-label,
+  .sidebar .account {
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .sidebar:is([data-expanded], :has(.settings-pop)) .account {
+    overflow: visible;
+  }
+  .sidebar .account > :not(.account-name) {
+    flex-shrink: 0;
+  }
+  .sidebar .sidebar-foot {
+    padding-left: 8px;
+  }
+  .sidebar .nav-text,
+  .sidebar .nav-label,
+  .sidebar .account-name,
+  .sidebar .account .btn {
+    transition: opacity 0.18s var(--ease-out);
+  }
+  .sidebar:not([data-expanded]):not(:has(.settings-pop)) {
+    :is(.nav-text, .nav-label, .account-name, .account .btn) {
+      opacity: 0;
+    }
+    /* Hidden, so not clickable at the rail's edge either. */
+    .account .btn {
+      pointer-events: none;
+    }
+    /* Just the m of the wordmark. */
+    .brand-mark {
+      clip-path: inset(0 77.5% 0 0);
+    }
+    .brand {
+      padding-left: 4px;
+    }
+  }
+  .sidebar .brand {
+    transition: padding 0.24s var(--ease-out);
+  }
+  .sidebar .brand-mark {
+    transition: clip-path 0.24s var(--ease-out);
+  }
+  /* The loading frame wears the rail too, shaped like what lands in it: a
+     square where each icon goes, the heading gaps kept but empty, and a
+     circle for the initial, so nothing shifts when the sidebar arrives. */
+  .shell-loading .sidebar {
+    overflow: hidden;
+  }
+  .shell-loading .sidebar .skel-label {
+    visibility: hidden;
+  }
+  .shell-loading .sidebar .skel-link {
+    width: 19px;
+    height: 19px;
+    margin: 9.5px 12px;
+  }
+  .shell-loading .sidebar .skel-account {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+  }
+}
+@media (min-width: 861px) and (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar .brand,
+  .sidebar .brand-mark,
+  .sidebar .nav-text,
+  .sidebar .nav-label,
+  .sidebar .account-name,
+  .sidebar .account .btn {
+    transition: none;
+  }
+}
 
 .main {
   padding: 36px 44px 88px;

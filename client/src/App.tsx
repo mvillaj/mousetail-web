@@ -33,6 +33,7 @@ import { NO_MACHINE_CAPABILITIES, type MachineCapabilities } from '@brewlab/shar
 import { useAuth } from './lib/auth';
 import { useMachines } from './lib/machines';
 import { useDelayPassed } from './lib/delay';
+import { useHoverIntent } from './lib/useHoverIntent';
 import AuthPage from './pages/Auth';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
@@ -144,7 +145,7 @@ function Nav({ groups }: { groups: ReturnType<typeof navFor> }) {
                 ) : null}
               </AnimatePresence>
               <l.icon className="nav-icon" aria-hidden="true" />
-              {l.label}
+              <span className="nav-text">{l.label}</span>
             </NavLink>
           ))}
         </div>
@@ -189,6 +190,11 @@ function Settings({ inline = false }: { inline?: boolean }) {
     <div className="sidebar-foot">
       {inline ? <div className="settings-inline">{controls}</div> : null}
       <div className="account">
+        {inline ? null : (
+          <span className="account-initial" aria-hidden="true">
+            {user?.displayName?.trim().charAt(0).toUpperCase() || '·'}
+          </span>
+        )}
         <span className="account-name">{user?.displayName}</span>
         {inline ? null : (
           <button
@@ -320,6 +326,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   const nav = navFor(capabilities);
   const [more, setMore] = useState(false);
 
+  const rail = useHoverIntent();
   const { pathname, key } = useLocation();
   const navigationType = useNavigationType();
 
@@ -337,7 +344,9 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="shell">
-      <aside className="sidebar">
+      {/* On a desktop window the sidebar rests as a rail of icons and opens
+          over the page when you mean to use it (useHoverIntent). */}
+      <aside className="sidebar" data-expanded={rail.open || undefined} {...rail.props}>
         <div className="brand">
           <BrandLockup />
         </div>
