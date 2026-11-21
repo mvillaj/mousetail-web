@@ -24,6 +24,7 @@ const coffee = (over: Partial<Coffee>): Coffee => ({
   isPublic: false,
   clonedFromId: null,
   createdAt: '2026-10-11T00:00:00Z',
+  pinnedAt: null,
   ...over,
 });
 

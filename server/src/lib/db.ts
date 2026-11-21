@@ -2,7 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runMigrations } from './migrate';
+import { runMigrations } from './migrate.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = process.env.BREWLAB_DB ?? resolve(here, '../../data/brewlab.db');
