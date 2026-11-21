@@ -32,13 +32,16 @@ const coffee = (id: string, name: string, createdAt: string, pinnedAt: string | 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-/** A server holding the shelf; pin requests answer with the updated coffee, or `fail`. */
+/**
+ * A server holding the shelf. Pin requests answer with the updated coffee, or
+ * `fail`, and are held until the test lets them go: all at once (`answer`) or
+ * one at a time in any order (`answerAt`).
+ */
 function serve(shelf: Coffee[], { fail = false } = {}) {
   const pending: Array<() => void> = [];
   const fetch = vi.fn(async (url: string, init?: RequestInit) => {
     const pin = /^\/api\/coffees\/([^/]+)\/pin$/.exec(url);
     if (pin) {
-      // Held until the test lets it go, so it can look before the answer.
       await new Promise<void>((go) => pending.push(go));
       if (fail) return json(500, { error: 'The server fell over' });
       const c = shelf.find((x) => x.id === pin[1])!;
@@ -47,10 +50,15 @@ function serve(shelf: Coffee[], { fail = false } = {}) {
         pinnedAt: init?.method === 'PUT' ? '2026-11-20T10:00:00.000Z' : null,
       });
     }
+    if (init?.method === 'DELETE') return new Response(null, { status: 204 });
     return json(200, shelf);
   });
   vi.stubGlobal('fetch', fetch);
-  return { fetch, answer: () => pending.splice(0).forEach((go) => go()) };
+  return {
+    fetch,
+    answer: () => pending.splice(0).forEach((go) => go()),
+    answerAt: (i: number) => pending[i](),
+  };
 }
 
 afterEach(() => vi.unstubAllGlobals());
@@ -140,10 +148,74 @@ describe('My coffees: pinning', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Pin Peru' }));
     expect(screen.getByRole('region', { name: 'Pinned' })).toBeInTheDocument();
     server.answer();
-    expect(await screen.findByText(/Couldn't pin Peru: The server fell over/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(document.querySelector('.banner')).toHaveTextContent(
+        "Couldn't pin Peru: The server fell over",
+      ),
+    );
+    expect(screen.getByRole('status')).toHaveTextContent("Couldn't pin Peru");
     expect(screen.getByRole('button', { name: 'Pin Peru' })).toHaveAttribute(
       'aria-pressed',
       'false',
     );
+  });
+
+  it('keeps focus on the pin button as its coffee moves', async () => {
+    const server = serve([coffee('cof_b', 'Peru', '2026-02-01')]);
+    renderShelf();
+    await userEvent.click(await screen.findByRole('button', { name: 'Pin Peru' }));
+    expect(within(group('Pinned')).getByRole('button', { name: 'Pin Peru' })).toHaveFocus();
+    server.answer();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Pin Peru' })).toHaveFocus());
+  });
+
+  it('ends where the last click left it, whatever order the answers arrive in', async () => {
+    const server = serve([coffee('cof_b', 'Peru', '2026-02-01')]);
+    renderShelf();
+    const pin = await screen.findByRole('button', { name: 'Pin Peru' });
+    await userEvent.click(pin);
+    await userEvent.click(screen.getByRole('button', { name: 'Pin Peru' }));
+    // The unpin is answered first, the pin last.
+    server.answerAt(1);
+    server.answerAt(0);
+    await waitFor(() => expect(server.fetch).toHaveBeenCalledTimes(3));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.getByRole('button', { name: 'Pin Peru' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(screen.queryByRole('region', { name: 'Pinned' })).toBeNull();
+  });
+
+  it('puts a new pin on top even when an existing pin looks later than now', async () => {
+    serve([
+      coffee('cof_a', 'Kenya', '2026-01-01', '2099-01-01T00:00:00.000Z'),
+      coffee('cof_b', 'Peru', '2026-02-01'),
+    ]);
+    renderShelf();
+    await userEvent.click(await screen.findByRole('button', { name: 'Pin Peru' }));
+    expect(namesIn(group('Pinned'))).toEqual(['Peru', 'Kenya']);
+  });
+
+  it('tells screen readers where the coffee went', async () => {
+    serve([coffee('cof_b', 'Peru', '2026-02-01')]);
+    renderShelf();
+    await userEvent.click(await screen.findByRole('button', { name: 'Pin Peru' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Peru pinned to the top');
+    await userEvent.click(screen.getByRole('button', { name: 'Pin Peru' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Peru back on the shelf');
+  });
+
+  it('clears a failed pin’s message once something else works', async () => {
+    const server = serve(
+      [coffee('cof_b', 'Peru', '2026-02-01'), coffee('cof_c', 'Ethiopia', '2026-03-01')],
+      { fail: true },
+    );
+    renderShelf();
+    await userEvent.click(await screen.findByRole('button', { name: 'Pin Peru' }));
+    server.answer();
+    await waitFor(() => expect(document.querySelector('.banner')).not.toBeNull());
+    await userEvent.click(screen.getByRole('button', { name: 'Delete Ethiopia' }));
+    await waitFor(() => expect(screen.queryByText(/Couldn't pin Peru/)).toBeNull());
   });
 });

@@ -13,7 +13,7 @@ import type {
   RoastLevel,
   Shot,
 } from '@brewlab/shared';
-import { jsonCol } from './db';
+import { jsonCol } from './db.ts';
 
 type Row = Record<string, any>;
 

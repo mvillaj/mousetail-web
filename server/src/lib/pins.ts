@@ -24,12 +24,6 @@ export function setPinned(
   return Number(changes) > 0;
 }
 
-/**
- * The shelf's order, as an ORDER BY over coffees aliased `c`: pinned first,
- * most recently pinned on top, then everything else newest first.
- */
-export const SHELF_ORDER = 'c.pinned_at IS NULL, c.pinned_at DESC, c.created_at DESC';
-
 /** A pin is personal: anyone but the owner sees the coffee unpinned. */
 export function forViewer(coffee: Coffee, viewerId: string | undefined): Coffee {
   return coffee.ownerId === viewerId ? coffee : { ...coffee, pinnedAt: null };

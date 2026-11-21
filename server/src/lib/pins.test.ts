@@ -3,11 +3,12 @@ import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 import type { Coffee } from '@brewlab/shared';
 import { runMigrations } from './migrate.ts';
-import { SHELF_ORDER, forViewer, setPinned } from './pins.ts';
+import { forViewer, setPinned } from './pins.ts';
 
 /**
- * The failures worth catching: someone pinning a coffee that isn't theirs, a
- * pin leaking onto another person's view, and the shelf losing its order.
+ * The failures worth catching: someone pinning a coffee that isn't theirs, and
+ * a pin leaking onto another person's view. How the routes read coffees with
+ * pins is in coffees.test.ts.
  */
 function shelf() {
   const db = new DatabaseSync(':memory:');
@@ -37,17 +38,9 @@ const pinnedAt = (db: DatabaseSync, id: string) =>
   (db.prepare('SELECT pinned_at FROM coffees WHERE id = ?').get(id) as { pinned_at: string | null })
     .pinned_at;
 
-const order = (db: DatabaseSync) =>
-  (
-    db
-      .prepare(`SELECT c.id FROM coffees c WHERE c.owner_id = 'usr_me' ORDER BY ${SHELF_ORDER}`)
-      .all() as { id: string }[]
-  ).map((r) => r.id);
-
 test('coffees start unpinned, including ones already on the shelf', () => {
   const db = shelf();
   assert.equal(pinnedAt(db, 'cof_old'), null);
-  assert.deepEqual(order(db), ['cof_new', 'cof_mid', 'cof_old']);
 });
 
 test('an owner pins and unpins their own coffee', () => {
@@ -56,6 +49,11 @@ test('an owner pins and unpins their own coffee', () => {
   assert.equal(pinnedAt(db, 'cof_old'), '2026-04-01T10:00:00Z');
   assert.equal(setPinned(db, 'cof_old', 'usr_me', false, '2026-04-02T10:00:00Z'), true);
   assert.equal(pinnedAt(db, 'cof_old'), null);
+
+  // Pinning again moves the time on, so it goes back to the top.
+  setPinned(db, 'cof_old', 'usr_me', true, '2026-04-01T10:00:00Z');
+  setPinned(db, 'cof_old', 'usr_me', true, '2026-04-03T10:00:00Z');
+  assert.equal(pinnedAt(db, 'cof_old'), '2026-04-03T10:00:00Z');
 });
 
 test("nobody can pin someone else's coffee, or one that isn't there", () => {
@@ -63,17 +61,6 @@ test("nobody can pin someone else's coffee, or one that isn't there", () => {
   assert.equal(setPinned(db, 'cof_theirs', 'usr_me', true, '2026-04-01'), false);
   assert.equal(pinnedAt(db, 'cof_theirs'), null);
   assert.equal(setPinned(db, 'cof_missing', 'usr_me', true, '2026-04-01'), false);
-});
-
-test('the shelf puts pins first, the latest pin on top, then the newest coffee', () => {
-  const db = shelf();
-  setPinned(db, 'cof_old', 'usr_me', true, '2026-04-01');
-  setPinned(db, 'cof_mid', 'usr_me', true, '2026-04-02');
-  assert.deepEqual(order(db), ['cof_mid', 'cof_old', 'cof_new']);
-
-  // Pinning again moves it back to the top.
-  setPinned(db, 'cof_old', 'usr_me', true, '2026-04-03');
-  assert.deepEqual(order(db), ['cof_old', 'cof_mid', 'cof_new']);
 });
 
 test('a pin is only ever shown to its owner', () => {

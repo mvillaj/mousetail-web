@@ -1,59 +1,35 @@
 import { Router, type Response } from 'express';
-import { DIALED_IN_MIN_RATING, coffeeInputSchema } from '@brewlab/shared';
+import { coffeeInputSchema } from '@brewlab/shared';
 import { bool, db, id, nowIso } from '../lib/db';
 import { optionalAuth, requireAuth, type AuthedRequest } from '../lib/auth';
-import { required, toCoffee } from '../lib/rows';
-import { SHELF_ORDER, forViewer, setPinned } from '../lib/pins';
+import { toCoffee } from '../lib/rows';
+import { coffeeFor, ownCoffee, pinCoffee, publicCoffees, shelfOf } from '../lib/coffees';
 
 export const coffeeRouter: Router = Router();
 
-const SELECT = `
-  SELECT c.*, u.display_name AS owner_name,
-         (SELECT COUNT(*) FROM shots s WHERE s.coffee_id = c.id) AS shot_count,
-         (SELECT ROUND(AVG(s.rating), 2) FROM shots s WHERE s.coffee_id = c.id AND s.rating IS NOT NULL) AS avg_rating,
-         (SELECT COUNT(*) FROM shots s WHERE s.coffee_id = c.id AND s.rating >= ${DIALED_IN_MIN_RATING}) AS well_rated_count,
-         (SELECT COUNT(*) FROM coffees k WHERE k.cloned_from_id = c.id) AS clone_count
-  FROM coffees c JOIN users u ON u.id = c.owner_id
-`;
-
 /** The shared library. Anyone can browse it, signed in or not. */
 coffeeRouter.get('/public', optionalAuth, (req: AuthedRequest, res) => {
-  const q = String(req.query.q ?? '').trim();
-  const roast = String(req.query.roast ?? '').trim();
-  const clauses = ['c.is_public = 1'];
-  const params: unknown[] = [];
-  if (q) {
-    clauses.push('(c.name LIKE ? OR c.roaster LIKE ? OR c.origin LIKE ? OR c.varietal LIKE ?)');
-    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
-  }
-  if (roast) {
-    clauses.push('c.roast_level = ?');
-    params.push(roast);
-  }
-  const rows = db
-    .prepare(
-      `${SELECT} WHERE ${clauses.join(' AND ')} ORDER BY shot_count DESC, c.created_at DESC LIMIT 200`,
-    )
-    .all(...(params as any[])) as any[];
-  res.json(rows.map((r) => forViewer(toCoffee(r), req.userId)));
+  res.json(
+    publicCoffees(db, req.userId, {
+      q: String(req.query.q ?? '').trim(),
+      roast: String(req.query.roast ?? '').trim(),
+    }),
+  );
 });
 
 coffeeRouter.get('/:id', optionalAuth, (req: AuthedRequest, res) => {
-  const row = db.prepare(`${SELECT} WHERE c.id = ?`).get(req.params.id) as any;
-  if (!row || (!row.is_public && row.owner_id !== req.userId)) {
+  const coffee = coffeeFor(db, String(req.params.id), req.userId);
+  if (!coffee) {
     res.status(404).json({ error: 'Coffee not found' });
     return;
   }
-  res.json(forViewer(toCoffee(row), req.userId));
+  res.json(coffee);
 });
 
 coffeeRouter.use(requireAuth);
 
 coffeeRouter.get('/', (req: AuthedRequest, res) => {
-  const rows = db
-    .prepare(`${SELECT} WHERE c.owner_id = ? ORDER BY ${SHELF_ORDER}`)
-    .all(req.userId!) as any[];
-  res.json(rows.map(toCoffee));
+  res.json(shelfOf(db, req.userId!));
 });
 
 function writeCoffee(
@@ -97,9 +73,7 @@ coffeeRouter.post('/', (req: AuthedRequest, res) => {
   }
   const cid = id('cof');
   writeCoffee(cid, req.userId!, parsed.data, null, nowIso());
-  res
-    .status(201)
-    .json(toCoffee(required(db.prepare(`${SELECT} WHERE c.id = ?`).get(cid), 'coffee')));
+  res.status(201).json(ownCoffee(db, cid));
 });
 
 coffeeRouter.patch('/:id', (req: AuthedRequest, res) => {
@@ -138,7 +112,7 @@ coffeeRouter.patch('/:id', (req: AuthedRequest, res) => {
     req.params.id,
     req.userId!,
   );
-  res.json(toCoffee(required(db.prepare(`${SELECT} WHERE c.id = ?`).get(req.params.id), 'coffee')));
+  res.json(ownCoffee(db, String(req.params.id)));
 });
 
 coffeeRouter.delete('/:id', (req: AuthedRequest, res) => {
@@ -149,12 +123,12 @@ coffeeRouter.delete('/:id', (req: AuthedRequest, res) => {
 /** Pin a coffee to the top of my shelf, or unpin it. Mine only. */
 function pin(pinned: boolean) {
   return (req: AuthedRequest, res: Response) => {
-    const coffeeId = String(req.params.id);
-    if (!setPinned(db, coffeeId, req.userId!, pinned, nowIso())) {
+    const coffee = pinCoffee(db, String(req.params.id), req.userId!, pinned, nowIso());
+    if (!coffee) {
       res.status(404).json({ error: 'Coffee not found' });
       return;
     }
-    res.json(toCoffee(required(db.prepare(`${SELECT} WHERE c.id = ?`).get(coffeeId), 'coffee')));
+    res.json(coffee);
   };
 }
 coffeeRouter.put('/:id/pin', pin(true));
@@ -175,7 +149,5 @@ coffeeRouter.post('/:id/clone', (req: AuthedRequest, res) => {
     src.id,
     nowIso(),
   );
-  res
-    .status(201)
-    .json(toCoffee(required(db.prepare(`${SELECT} WHERE c.id = ?`).get(cid), 'coffee')));
+  res.status(201).json(ownCoffee(db, cid));
 });
