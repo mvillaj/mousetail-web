@@ -30,16 +30,16 @@
     "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "@clerk/backend": "^3.23.1",
-    "@clerk/testing": "^2.2.44",
+    "@clerk/backend": "^3.31.1",
+    "@clerk/testing": "^2.3.3",
     "@eslint/js": "^9.39.5",
-    "@playwright/test": "^1.64.0",
+    "@playwright/test": "^1.65.1",
     "concurrently": "^9.1.2",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "globals": "^17.13.0",
-    "prettier": "^3.9.10",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.72.1"
   }
