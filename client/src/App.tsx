@@ -1,6 +1,12 @@
-import { ViewTransition, useEffect, useId, useLayoutEffect, useState } from 'react';
-import { AnimatePresence } from 'motion/react';
-import * as m from 'motion/react-m';
+import {
+  ViewTransition,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from 'react';
 import {
   NavLink,
   Navigate,
@@ -13,6 +19,7 @@ import {
 import {
   BookOpen,
   Bean,
+  ChevronDown,
   CloudCog,
   Coffee as CoffeeIcon,
   Compass,
@@ -22,6 +29,8 @@ import {
   LogOut,
   Menu,
   Palette,
+  PanelLeftClose,
+  PanelLeftOpen,
   Sprout,
   Plus,
   UserRound,
@@ -33,6 +42,9 @@ import { NO_MACHINE_CAPABILITIES, type MachineCapabilities } from '@brewlab/shar
 import { useAuth } from './lib/auth';
 import { useMachines } from './lib/machines';
 import { useDelayPassed } from './lib/delay';
+import { sidebarStartsOpen, slideProgress, useSidebar } from './lib/sidebar';
+import { useScrollEdges } from './lib/useScrollEdges';
+import { useScrolling } from './lib/useScrolling';
 import AuthPage from './pages/Auth';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
@@ -49,6 +61,8 @@ import Changelog from './pages/Changelog';
 import Account from './pages/Account';
 import GettingStarted from './pages/GettingStarted';
 import BrandLockup from './components/BrandLockup';
+import BrandRing from './components/BrandRing';
+import RailLabel from './components/RailLabel';
 import { FinishPicker, ThemeToggle } from './components/Appearance';
 
 interface NavLinkDef {
@@ -103,48 +117,28 @@ export function navFor(caps: MachineCapabilities) {
     .filter((g) => g.links.length > 0);
 }
 
-function Nav({ groups }: { groups: ReturnType<typeof navFor> }) {
-  const { pathname } = useLocation();
-  // On a short window the nav scrolls; keep where you are in view.
-  // Only the nav's own scroll area moves: scrollIntoView would scroll the page too.
-  useEffect(() => {
-    const nav = document.querySelector<HTMLElement>('.sidebar .nav');
-    const active = nav?.querySelector<HTMLElement>('a.active');
-    if (!nav || !active) return;
-    const top = active.offsetTop - nav.offsetTop;
-    if (top < nav.scrollTop) nav.scrollTop = top;
-    else if (top + active.offsetHeight > nav.scrollTop + nav.clientHeight) {
-      nav.scrollTop = top + active.offsetHeight - nav.clientHeight;
-    }
-  }, [pathname]);
+/** How far in from an edge the sidebar's nav fades; .nav-frame in app.css. */
+const NAV_FADE = 52;
 
-  // One soft pill that glides to whichever link the pointer is over, fading
-  // in as it arrives and out as it leaves. Its own id per nav: the sidebar and
-  // the More sheet each have one.
-  const [hovered, setHovered] = useState<string | null>(null);
-  const highlight = useId();
-
+function Nav({
+  groups,
+  rail = false,
+  ref,
+}: {
+  groups: ReturnType<typeof navFor>;
+  /** Icons only: the names go in tooltips, and stay in the page unseen. */
+  rail?: boolean;
+  ref?: RefObject<HTMLElement | null>;
+}) {
   return (
-    <nav className="nav" aria-label="Main" onMouseLeave={() => setHovered(null)}>
+    <nav className="nav" aria-label="Main" ref={ref}>
       {groups.map((group) => (
         <div className="nav-group" key={group.section}>
           <div className="nav-label">{group.section}</div>
           {group.links.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.end} onMouseEnter={() => setHovered(l.to)}>
-              <AnimatePresence>
-                {hovered === l.to ? (
-                  <m.span
-                    className="nav-hover"
-                    layoutId={highlight}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0, transition: { duration: 0.2 } }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                  />
-                ) : null}
-              </AnimatePresence>
+            <NavLink key={l.to} to={l.to} end={l.end} title={rail ? l.label : undefined}>
               <l.icon className="nav-icon" aria-hidden="true" />
-              {l.label}
+              <span className="nav-text">{l.label}</span>
             </NavLink>
           ))}
         </div>
@@ -154,13 +148,96 @@ function Nav({ groups }: { groups: ReturnType<typeof navFor> }) {
 }
 
 /**
- * Account row. On desktop, theme and finish live in a popover off this row, so
- * the footer stays one line and never crowds the nav on a short window. The
- * phone sheet has the room, so it shows them inline.
+ * The sidebar's nav. On a short window it scrolls, and says so: it fades where
+ * there's more, with a chevron below that scrolls on. The chevron is for the
+ * pointer alone; tabbing through the links already brings each into view. Its
+ * scrollbar shows only while someone scrolls it.
  */
-function Settings({ inline = false }: { inline?: boolean }) {
+function SidebarNav({ groups, rail }: { groups: ReturnType<typeof navFor>; rail: boolean }) {
+  const nav = useRef<HTMLElement>(null);
+  const { above, below } = useScrollEdges(nav);
+  const placedAt = useRef<number | null>(null);
+  const scrolling = useScrolling(nav, placedAt);
+  const { pathname } = useLocation();
+
+  // On a short window the nav scrolls; keep where you are in view.
+  // Only the nav's own scroll area moves: scrollIntoView would scroll the page too.
+  useEffect(() => {
+    const el = nav.current;
+    if (!el) return;
+    let height = el.clientHeight;
+    const place = () => {
+      const active = el.querySelector<HTMLElement>('a.active');
+      if (!active) return;
+      // Measured on screen, and clear of the fade at either edge (NAV_FADE).
+      const view = el.getBoundingClientRect();
+      const row = active.getBoundingClientRect();
+      const was = el.scrollTop;
+      if (row.top < view.top + NAV_FADE) el.scrollTop -= view.top + NAV_FADE - row.top;
+      else if (row.bottom > view.bottom - NAV_FADE) {
+        el.scrollTop += row.bottom - view.bottom + NAV_FADE;
+      }
+      if (el.scrollTop !== was) placedAt.current = el.scrollTop;
+    };
+    place();
+
+    // A shorter window keeps it too, unless it had been scrolled out of view.
+    if (typeof ResizeObserver === 'undefined') return;
+    const sized = new ResizeObserver(() => {
+      const before = height;
+      height = el.clientHeight;
+      const active = el.querySelector('a.active');
+      if (!active || !height || (before && height >= before)) return;
+      const top = active.getBoundingClientRect().top - el.getBoundingClientRect().top;
+      // From nothing: the window was too narrow for a sidebar, and now isn't.
+      if (!before || (top >= 0 && top < before)) place();
+    });
+    sized.observe(el);
+    return () => sized.disconnect();
+  }, [pathname]);
+
+  return (
+    <div
+      className="nav-frame"
+      data-more-above={above || undefined}
+      data-more-below={below || undefined}
+      data-scrolling={scrolling || undefined}
+    >
+      <Nav groups={groups} rail={rail} ref={nav} />
+      <button
+        type="button"
+        className="nav-more"
+        tabIndex={-1}
+        aria-hidden="true"
+        onClick={() => {
+          const el = nav.current;
+          if (!el) return;
+          const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          el.scrollBy({ top: el.clientHeight * 0.7, behavior: calm ? 'auto' : 'smooth' });
+        }}
+      >
+        <ChevronDown aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Account row. On desktop, theme and finish live in a popover off this row, so
+ * the footer stays one line and never crowds the nav on a short window. In the
+ * rail there's room for the initial alone, so it opens the lot: name, theme,
+ * finish and sign out. The phone sheet has the room, so it shows them inline.
+ */
+function Settings({ inline = false, rail = false }: { inline?: boolean; rail?: boolean }) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const toggle = () => setOpen(!open);
+  // Toggling the sidebar shuts it, for good.
+  const [openedIn, setOpenedIn] = useState(rail);
+  if (openedIn !== rail) {
+    setOpenedIn(rail);
+    setOpen(false);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -184,35 +261,67 @@ function Settings({ inline = false }: { inline?: boolean }) {
       <FinishPicker />
     </>
   );
+  const initial = user?.displayName?.trim().charAt(0).toUpperCase() || '·';
 
   return (
     <div className="sidebar-foot">
       {inline ? <div className="settings-inline">{controls}</div> : null}
       <div className="account">
-        <span className="account-name">{user?.displayName}</span>
-        {inline ? null : (
+        {inline ? null : rail ? (
           <button
-            className="btn btn-ghost btn-icon"
-            onClick={() => setOpen((o) => !o)}
+            type="button"
+            className="account-initial"
+            onClick={toggle}
             aria-expanded={open}
             aria-haspopup="dialog"
-            aria-label="Theme and colour"
-            title="Theme and colour"
+            aria-label="Account"
+            title={user?.displayName}
           >
-            <Palette aria-hidden="true" />
+            {initial}
           </button>
+        ) : (
+          <span className="account-initial" aria-hidden="true">
+            {initial}
+          </span>
         )}
-        <button
-          className="btn btn-ghost btn-icon"
-          onClick={logout}
-          aria-label="Sign out"
-          title="Sign out"
-        >
-          <LogOut aria-hidden="true" />
-        </button>
+        {/* Out of sight in the rail, so out of reach too. */}
+        <div className="account-line" inert={rail}>
+          <span className="account-name">{user?.displayName}</span>
+          {inline ? null : (
+            <button
+              className="btn btn-ghost btn-icon"
+              onClick={toggle}
+              aria-expanded={open}
+              aria-haspopup="dialog"
+              aria-label="Theme and colour"
+              title="Theme and colour"
+            >
+              <Palette aria-hidden="true" />
+            </button>
+          )}
+          <button
+            className="btn btn-ghost btn-icon"
+            onClick={logout}
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut aria-hidden="true" />
+          </button>
+        </div>
         {open && !inline ? (
-          <div className="settings-pop" role="dialog" aria-label="Theme and colour">
+          <div
+            className="settings-pop"
+            role="dialog"
+            aria-label={rail ? 'Account' : 'Theme and colour'}
+          >
+            {rail ? <div className="settings-name">{user?.displayName}</div> : null}
             {controls}
+            {rail ? (
+              <button className="btn btn-sm settings-sign-out" onClick={logout}>
+                <LogOut aria-hidden="true" />
+                Sign out
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -315,11 +424,27 @@ export function MoreSheet({
   );
 }
 
+/**
+ * The brand slot. The rail shows the ring; open, the ring's drop leaves it and
+ * runs along as the word is written behind it, to end as the drop on the tail.
+ * All of it is in the stylesheet.
+ */
+function SidebarBrand() {
+  return (
+    <div className="brand">
+      <BrandRing />
+      <BrandLockup />
+    </div>
+  );
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
   const { capabilities } = useMachines();
   const nav = navFor(capabilities);
   const [more, setMore] = useState(false);
 
+  const sidebar = useSidebar();
+  const aside = useRef<HTMLElement>(null);
   const { pathname, key } = useLocation();
   const navigationType = useNavigationType();
 
@@ -336,13 +461,31 @@ function Shell({ children }: { children: React.ReactNode }) {
   }, [navigationType, key]);
 
   return (
-    <div className="shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <BrandLockup />
-        </div>
-        <Nav groups={nav} />
-        <Settings />
+    <div
+      className="shell"
+      data-sidebar={sidebar.open ? 'open' : 'rail'}
+      data-moved={sidebar.slide ? true : undefined}
+      data-turned={sidebar.slide?.turned || undefined}
+      style={sidebar.slide ? ({ '--slide-from': sidebar.slide.from } as CSSProperties) : undefined}
+    >
+      <aside className="sidebar" ref={aside}>
+        <SidebarBrand />
+        <SidebarNav groups={nav} rail={!sidebar.open} />
+        <button
+          type="button"
+          className="sidebar-toggle"
+          onClick={() => sidebar.toggle(slideProgress(aside.current))}
+          title={sidebar.open ? undefined : 'Expand menu'}
+        >
+          {sidebar.open ? (
+            <PanelLeftClose className="nav-icon" aria-hidden="true" />
+          ) : (
+            <PanelLeftOpen className="nav-icon" aria-hidden="true" />
+          )}
+          <span className="nav-text">{sidebar.open ? 'Collapse menu' : 'Expand menu'}</span>
+        </button>
+        <Settings rail={!sidebar.open} />
+        {sidebar.open ? null : <RailLabel sidebar={aside} />}
       </aside>
 
       <header className="topbar">
@@ -383,14 +526,16 @@ export function Loading({ shell }: { shell: boolean }) {
   // The smallest nav there is, so a richer bench only adds rows when it lands.
   const groups = navFor(NO_MACHINE_CAPABILITIES);
   return (
-    <div className="shell shell-loading" aria-busy="true">
+    <div
+      className="shell shell-loading"
+      data-sidebar={sidebarStartsOpen() ? 'open' : 'rail'}
+      aria-busy="true"
+    >
       <span className="sr-only" role="status">
         Loading
       </span>
       <aside className="sidebar">
-        <div className="brand">
-          <BrandLockup />
-        </div>
+        <SidebarBrand />
         <div className="nav" aria-hidden="true">
           {groups.map((g) => (
             <div className="nav-group" key={g.section}>

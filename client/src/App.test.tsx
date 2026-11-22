@@ -1,5 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { LazyMotion, domMax } from 'motion/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { Link, MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App, { MoreSheet, navFor } from './App';
@@ -80,44 +79,6 @@ describe('MoreSheet', () => {
     expect(document.documentElement.style.overflow).toBe('hidden');
     unmount();
     expect(document.documentElement.style.overflow).toBe('');
-  });
-});
-
-describe('nav hover', () => {
-  // With motion's engine loaded, as in the app, so fades can finish.
-  function renderNav() {
-    const groups = navFor({ profiling: 'pressure', cloud: 'fellow' });
-    render(
-      <LazyMotion features={domMax}>
-        <MemoryRouter>
-          <ThemeProvider>
-            <MoreSheet groups={groups} onClose={vi.fn()} />
-          </ThemeProvider>
-        </MemoryRouter>
-      </LazyMotion>,
-    );
-    return screen.getByRole('navigation', { name: 'Main' });
-  }
-  const pillIn = (name: string) => screen.getByRole('link', { name }).querySelector('.nav-hover');
-
-  it('puts one pill under the link the pointer is over, and moves it along', async () => {
-    const nav = renderNav();
-    expect(nav.querySelector('.nav-hover')).toBeNull();
-
-    fireEvent.mouseEnter(screen.getByRole('link', { name: 'Grinders' }));
-    expect(pillIn('Grinders')).not.toBeNull();
-
-    // The old pill hands over with a layout animation, which needs a real
-    // browser to finish; e2e/signed-in/motion.spec.ts checks it settles to one.
-    fireEvent.mouseEnter(screen.getByRole('link', { name: 'Machines' }));
-    expect(pillIn('Machines')).not.toBeNull();
-  });
-
-  it('lets the pill fade away when the pointer leaves the nav', async () => {
-    const nav = renderNav();
-    fireEvent.mouseEnter(screen.getByRole('link', { name: 'Grinders' }));
-    fireEvent.mouseLeave(nav);
-    await waitFor(() => expect(nav.querySelector('.nav-hover')).toBeNull());
   });
 });
 
@@ -219,6 +180,53 @@ describe('page transitions', () => {
     // Signed out, there's no shell, and nothing left for the CSS to read.
     unmount();
     expect(navigation()).toBeUndefined();
+  });
+});
+
+describe('the sidebar', () => {
+  afterEach(() => localStorage.clear());
+  const renderShell = () => {
+    authUser = { displayName: 'Ada', onboardedAt: '2026-10-01T00:00:00.000Z' };
+    return render(
+      <MemoryRouter>
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>
+      </MemoryRouter>,
+    );
+  };
+  const aside = () => screen.getByRole('complementary');
+
+  it('is a rail until opened: icons named in tooltips, the account behind its initial', () => {
+    const { container } = renderShell();
+    expect(container.querySelector('.shell')).toHaveAttribute('data-sidebar', 'rail');
+    expect(within(aside()).getByRole('link', { name: 'Grinders' })).toHaveAttribute(
+      'title',
+      'Grinders',
+    );
+    // The row is out of sight, so out of reach.
+    expect(container.querySelector('.account-line')).toHaveAttribute('inert');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    const pop = screen.getByRole('dialog', { name: 'Account' });
+    expect(pop).toHaveTextContent('Ada');
+    expect(within(pop).getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
+  });
+
+  it('opens on its button, with labels and the account row in place of tooltips', () => {
+    const { container } = renderShell();
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Expand menu' }));
+    expect(container.querySelector('.shell')).toHaveAttribute('data-sidebar', 'open');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(within(aside()).getByRole('link', { name: 'Grinders' })).not.toHaveAttribute('title');
+    expect(container.querySelector('.account-line')).not.toHaveAttribute('inert');
+    expect(screen.queryByRole('button', { name: 'Account' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse menu' }));
+    expect(container.querySelector('.shell')).toHaveAttribute('data-sidebar', 'rail');
+    // Shut by the first toggle, so it isn't back with the rail.
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
 
