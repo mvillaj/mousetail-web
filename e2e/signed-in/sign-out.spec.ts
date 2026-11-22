@@ -11,14 +11,16 @@ test('signing out returns to the landing page without reloading', async ({ page 
   await page.goto('/');
   await clerk.signIn({ page, emailAddress: E2E_EMAIL });
   await page.goto('/shots');
-  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
+  // The sidebar starts as a rail, which keeps sign out behind the initial.
+  await page.getByRole('button', { name: 'Account', exact: true }).click();
+  const signOut = page
+    .getByRole('dialog', { name: 'Account' })
+    .getByRole('button', { name: 'Sign out' });
+  await expect(signOut).toBeVisible();
 
   let loads = 0;
   page.on('load', () => loads++);
-  // The sidebar rests as a rail of icons; resting the pointer on it opens it
-  // to the account row, as it would for a person.
-  await page.getByRole('complementary').hover();
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  await signOut.click();
 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Find the mouse tail');

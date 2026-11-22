@@ -57,24 +57,6 @@ async function openShotForm(page: Page) {
   await expect(page.getByLabel(/where was the grinder set/i)).toBeVisible();
 }
 
-test('the nav pill follows the pointer, settles on one link, and fades on leaving', async ({
-  page,
-}) => {
-  await page.goto('/shots');
-  const nav = page.getByRole('navigation', { name: 'Main' });
-  const pills = nav.locator('.nav-hover');
-
-  await nav.getByRole('link', { name: 'Grinders' }).hover();
-  await expect(nav.getByRole('link', { name: 'Grinders' }).locator('.nav-hover')).toHaveCount(1);
-
-  await nav.getByRole('link', { name: 'Machines' }).hover();
-  await expect(nav.getByRole('link', { name: 'Machines' }).locator('.nav-hover')).toHaveCount(1);
-  await expect(pills).toHaveCount(1);
-
-  await page.mouse.move(900, 500);
-  await expect(pills).toHaveCount(0);
-});
-
 test('the grind dial rolls its digits, and is a plain input to type into', async ({ page }) => {
   await openShotForm(page);
   const input = page.getByLabel(/where was the grinder set/i);
@@ -122,9 +104,7 @@ test('in forced colours, the grind dial is the plain input, shown once', async (
   await expect(page.locator('.grind-dial-rolling')).toBeHidden();
 });
 
-test('without the motion engine, hover still shows and nothing is left frozen', async ({
-  page,
-}) => {
+test('without the motion engine, rating leaves nothing frozen', async ({ page }) => {
   // The engine's chunk never arrives (in dev it's /src/lib/motionFeatures.ts).
   await page.route('**/motionFeatures*', (route) => route.abort());
   await openShotForm(page);
@@ -134,13 +114,4 @@ test('without the motion engine, hover still shows and nothing is left frozen', 
   await four.click();
   await expect(four).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.rating-spark')).toHaveCount(0);
-
-  await page.keyboard.press('Escape');
-  const grinders = page.getByRole('navigation', { name: 'Main' }).getByRole('link', {
-    name: 'Grinders',
-  });
-  await grinders.hover();
-  await expect
-    .poll(() => grinders.evaluate((a) => getComputedStyle(a).backgroundColor))
-    .not.toBe('rgba(0, 0, 0, 0)');
 });

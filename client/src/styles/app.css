@@ -575,6 +575,20 @@ h3 {
   padding: 0 10px;
 }
 
+/* The app icon's ring, off its tile: only the desktop rail shows it (below). */
+.brand-ring {
+  display: none;
+}
+.ring-ink {
+  fill: currentColor;
+}
+.ring-stream {
+  fill: #c45a1e;
+}
+.ring-drop {
+  fill: #e3a471;
+}
+
 .brand-lockup {
   display: inline-flex;
   align-items: center;
@@ -648,6 +662,118 @@ h3 {
   margin: 0 -6px;
   padding: 0 6px;
 }
+/* When the sidebar's nav doesn't fit, it fades out where there's more of it
+   (useScrollEdges sets data-more-above and -below), over a chevron. The fade
+   lengths are registered so they can ease, as is the scrollbar's colour: it
+   shows only while the nav is being scrolled (data-scrolling, useScrolling).
+   Anything scrolled to, by the page or by Tab, stops short of the fade. */
+@property --fade-above {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --fade-below {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+/* Inherited, which is how it reaches the scrollbar's own pseudo-elements. */
+@property --nav-thumb {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+.nav-frame {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 -6px;
+}
+.nav-frame .nav {
+  margin: 0;
+  scroll-padding-block: 52px;
+  /* Room for the 4px scrollbar whether or not it's there, out of the 6px the
+     row already kept, so no pill changes width when it comes. */
+  scrollbar-gutter: stable;
+  padding-right: 2px;
+  /* Back from the app-wide colour: any value here turns the rules below off. */
+  scrollbar-color: auto;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--fade-above),
+    #000 calc(100% - var(--fade-below)),
+    transparent calc(100% - var(--fade-below) * 0.36)
+  );
+  transition:
+    --fade-above 0.2s var(--ease-out),
+    --fade-below 0.2s var(--ease-out),
+    --nav-thumb 0.2s var(--ease-out);
+}
+.nav-frame[data-scrolling] .nav {
+  --nav-thumb: var(--border-strong);
+}
+.nav-frame[data-more-above] .nav {
+  --fade-above: 40px;
+}
+.nav-frame[data-more-below] .nav {
+  --fade-below: 52px;
+}
+.nav-frame .nav::-webkit-scrollbar {
+  width: 4px;
+}
+.nav-frame .nav::-webkit-scrollbar-track {
+  background: none;
+}
+.nav-frame .nav::-webkit-scrollbar-thumb {
+  border-radius: 2px;
+  background: var(--nav-thumb);
+}
+/* Firefox, which has no pseudo-element for it. */
+@supports not selector(::-webkit-scrollbar) {
+  .nav-frame .nav {
+    scrollbar-width: thin;
+    scrollbar-color: var(--nav-thumb) transparent;
+  }
+}
+/* In the icons' column, so it stays put whether the sidebar is open or not. */
+.nav-more {
+  position: absolute;
+  bottom: 0;
+  left: 6px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s var(--ease-out),
+    color 0.15s;
+}
+.nav-more svg {
+  width: 16px;
+  height: 16px;
+}
+.nav-more:hover {
+  color: var(--text);
+}
+.nav-frame[data-more-below] .nav-more {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-frame .nav,
+  .nav-more {
+    transition: none;
+  }
+}
 .nav-label {
   font-size: 0.76rem;
   font-weight: 600;
@@ -658,10 +784,6 @@ h3 {
   padding-top: 0;
 }
 .nav a {
-  position: relative;
-  /* Its own stacking context, so the hover pill can sit under the label but
-     over the link's own (active) background. */
-  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -676,21 +798,8 @@ h3 {
     color 0.15s;
 }
 .nav a:hover {
+  background: var(--wash);
   color: var(--text);
-}
-/* Until motion's engine is in (lib/motion.ts), the gliding pill can't fade in,
-   so hover gets a plain background as it did before. */
-:root:not([data-motion='ready']) .nav a:hover {
-  background: var(--wash);
-}
-/* The hover pill (Nav in App.tsx): one per nav, gliding between links. */
-.nav-hover {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: var(--wash);
-  pointer-events: none;
 }
 /* Mixed into the page ground rather than --surface: --action-soft is a tint of
    white, and the ground already carries the finish's cast, so the two land on
@@ -726,6 +835,13 @@ h3 {
   align-items: center;
   gap: 6px;
   position: relative;
+}
+.account-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 .account-name + .btn {
   margin-left: 4px;
@@ -769,34 +885,97 @@ h3 {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Who's signed in, as an initial: all the collapsed rail has room for. */
+/* Who's signed in, as an initial. In the rail it's the button for all of it. */
 .account-initial {
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
   flex: none;
+  padding: 0;
+  border: none;
   border-radius: 999px;
   background: var(--wash);
   color: var(--text);
+  font: inherit;
   font-size: 0.8rem;
   font-weight: 700;
 }
+button.account-initial {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+button.account-initial:is(:hover, [aria-expanded='true']) {
+  background: color-mix(in oklab, var(--text) 18%, transparent);
+}
+.settings-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.settings-sign-out {
+  align-self: flex-start;
+}
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+  min-height: 38px;
+  padding: 7px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  /* Close to the nav and the footer rule, so it costs the nav little room. */
+  margin: -10px 0 -8px;
+  background: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.sidebar-toggle:hover {
+  background: var(--wash);
+  color: var(--text);
+}
 
 /* ── The collapsible sidebar (desktop) ───────────────────────────────────────
-   It rests as a rail of icons. When you mean to use it (useHoverIntent in
-   App.tsx sets data-expanded), it widens over the page rather than pushing
-   it: the grid keeps the rail's width, so nothing underneath moves. Labels,
-   section headings and the account row fade but stay in the page, so screen
-   readers and link names are unchanged. While the theme pop-up is open it
-   stays wide, so the pop-up is never clipped. */
+   A rail of icons, or open with its labels, as it was last left on this device
+   (lib/sidebar.ts; data-sidebar on the shell). Labels, headings and the
+   wordmark fade but stay in the page, so link names are the same either way,
+   and no icon moves.
+
+   Opening and closing never animate layout: the column and the sidebar's width
+   step once, then a clip reveals the sidebar while the page slides to where it
+   already is. data-moved is there for the length of a toggle's slide, so none
+   of it plays at any other time. One turned back part-way (data-turned) starts
+   from where the last had got to, on the curve run backwards. */
 @media (min-width: 861px) {
+  :root {
+    /* Beyond a notch, when a phone this wide is on its side. */
+    --rail: calc(72px + env(safe-area-inset-left));
+    --rail-open: calc(248px + env(safe-area-inset-left));
+    --rail-travel: 176px;
+    --rail-ease: cubic-bezier(0.45, 0, 0.2, 1);
+  }
   .shell {
     grid-template-columns: var(--rail) 1fr;
+    /* The page starts its slide past the right edge; clip, unlike hidden,
+       leaves the sticky sidebar alone. */
+    overflow-x: clip;
   }
-  :root {
-    --rail: 72px;
-    --rail-open: 248px;
+  .shell[data-sidebar='open'] {
+    grid-template-columns: var(--rail-open) 1fr;
+  }
+  .shell {
+    --slide-ease: var(--rail-ease);
+  }
+  .shell[data-turned] {
+    --slide-ease: cubic-bezier(0.8, 0, 0.55, 1);
   }
   .sidebar {
     width: var(--rail);
@@ -804,88 +983,254 @@ h3 {
     padding-right: 14px;
     z-index: 20;
     background: var(--bg);
-    transition:
-      width 0.24s var(--ease-out),
-      box-shadow 0.24s var(--ease-out);
   }
-  .sidebar:is([data-expanded], :has(.settings-pop)) {
+  .shell[data-sidebar='open'] .sidebar {
     width: var(--rail-open);
-    box-shadow: var(--shadow-pop);
   }
 
   /* Anything wider than the rail is cut at its own edge, not spilled. */
   .sidebar .nav a,
   .sidebar .nav-label,
-  .sidebar .account {
+  .sidebar-toggle,
+  .sidebar .account-line {
     overflow: hidden;
     white-space: nowrap;
   }
-  .sidebar:is([data-expanded], :has(.settings-pop)) .account {
-    overflow: visible;
-  }
-  .sidebar .account > :not(.account-name) {
+  .sidebar .account-line > .btn {
     flex-shrink: 0;
   }
   .sidebar .sidebar-foot {
     padding-left: 8px;
   }
-  .sidebar .nav-text,
-  .sidebar .nav-label,
-  .sidebar .account-name,
-  .sidebar .account .btn {
-    transition: opacity 0.18s var(--ease-out);
+  .sidebar .settings-pop {
+    white-space: normal;
   }
-  .sidebar:not([data-expanded]):not(:has(.settings-pop)) {
-    :is(.nav-text, .nav-label, .account-name, .account .btn) {
-      opacity: 0;
-    }
-    /* Hidden, so not clickable at the rail's edge either. */
-    .account .btn {
-      pointer-events: none;
-    }
-    /* Just the m of the wordmark. */
-    .brand-mark {
-      clip-path: inset(0 77.5% 0 0);
-    }
-    .brand {
-      padding-left: 4px;
-    }
+  /* Inside the row: the nav scrolls, so it would cut a ring around one off. */
+  .sidebar .nav a {
+    outline-offset: -2px;
   }
+  /* The name of the icon under keyboard focus (RailLabel). */
+  .rail-label {
+    position: absolute;
+    left: calc(100% - 4px);
+    transform: translateY(-50%);
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-pop);
+    pointer-events: none;
+  }
+
+  /* A short rule stands where each group's heading will be. */
+  .sidebar .nav-group {
+    position: relative;
+  }
+  .sidebar .nav-group + .nav-group::before {
+    content: '';
+    position: absolute;
+    top: 17px;
+    left: 12px;
+    width: 20px;
+    height: 1px;
+    background: var(--border-strong);
+  }
+  .shell[data-sidebar='open'] .sidebar .nav-group + .nav-group::before,
+  .shell[data-sidebar='rail'] .sidebar :is(.nav-text, .nav-label, .account-line) {
+    opacity: 0;
+  }
+
+  /* The mark. At rest, the ring; the word is there but not yet written. It's
+     wider than the rail, so it mustn't catch what's meant for the page. */
   .sidebar .brand {
-    transition: padding 0.24s var(--ease-out);
+    position: relative;
+    pointer-events: none;
   }
-  .sidebar .brand-mark {
-    transition: clip-path 0.24s var(--ease-out);
+  .sidebar .brand-ring {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 4px;
+    width: 36px;
+    height: 36px;
+    margin-top: -18px;
+    color: var(--text);
   }
-  /* The loading frame wears the rail too, shaped like what lands in it: a
-     square where each icon goes, the heading gaps kept but empty, and a
-     circle for the initial, so nothing shifts when the sidebar arrives. */
-  .shell-loading .sidebar {
-    overflow: hidden;
+  /* About the ring's own centre, and the drop's, in the 36px drawing. */
+  .sidebar .ring-round {
+    transform-origin: 16.25px 18px;
   }
-  .shell-loading .sidebar .skel-label {
+  .sidebar .ring-drop {
+    transform-origin: 31.4px 20.5px;
+  }
+  .sidebar .brand-word {
+    /* Stated, not left at none: only one inset can animate into another. */
+    clip-path: inset(0 0 0 0);
+  }
+  .shell[data-sidebar='rail'] .sidebar .brand-word {
+    clip-path: inset(0 100% 0 0);
+  }
+  .shell[data-sidebar='rail'] .sidebar .brand-drop {
+    opacity: 0;
+  }
+  .shell[data-sidebar='open'] .sidebar .ring-round {
+    opacity: 0;
+    transform: rotate(80deg) scale(0.82);
+  }
+  /* To the drop on the wordmark's tail. */
+  .shell[data-sidebar='open'] .sidebar .ring-drop {
+    fill: #d9622b;
+    opacity: 0;
+    transform: translate(139.3px, 4.55px) scale(0.8);
+  }
+
+  /* The loading frame, shaped like what lands in it: in the rail, a square
+     where each icon goes, the same rules between groups, and a circle for the
+     initial. Rows and labels are the real ones' heights (a column, so margins
+     don't collapse), so the sidebar only ever adds rows. */
+  .shell-loading[data-sidebar='rail'] .sidebar .nav-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .shell-loading[data-sidebar='rail'] .sidebar .skel-label {
     visibility: hidden;
+    height: 19px;
+    margin: 12px 12px 4px;
   }
-  .shell-loading .sidebar .skel-link {
+  .shell-loading[data-sidebar='rail'] .sidebar .nav-group:first-child .skel-label {
+    margin-top: 0;
+  }
+  .shell-loading[data-sidebar='rail'] .sidebar .skel-link {
     width: 19px;
     height: 19px;
     margin: 9.5px 12px;
   }
-  .shell-loading .sidebar .skel-account {
+  .shell-loading[data-sidebar='rail'] .sidebar .skel-account {
     width: 28px;
     height: 28px;
     border-radius: 999px;
   }
 }
-@media (min-width: 861px) and (prefers-reduced-motion: reduce) {
-  .sidebar,
-  .sidebar .brand,
-  .sidebar .brand-mark,
-  .sidebar .nav-text,
-  .sidebar .nav-label,
-  .sidebar .account-name,
-  .sidebar .account .btn {
-    transition: none;
+
+@media (min-width: 861px) and (prefers-reduced-motion: no-preference) {
+  .shell[data-moved] :is(.sidebar, .main),
+  .shell[data-moved] .sidebar :is(.nav a, .sidebar-toggle, .sidebar-foot) {
+    animation-duration: 0.32s;
+    animation-timing-function: var(--slide-ease);
+    animation-delay: calc(var(--slide-from, 0) * -0.32s);
+  }
+  .shell[data-moved] .sidebar {
+    animation-name: rail-close;
+  }
+  .shell[data-moved][data-sidebar='open'] .sidebar {
+    animation-name: rail-open;
+  }
+  /* Each row is cut on its own rounded edge, so a pill shrinks to its icon. */
+  .shell[data-moved] .sidebar :is(.nav a, .sidebar-toggle, .sidebar-foot) {
+    animation-name: row-close;
+  }
+  .shell[data-moved][data-sidebar='open'] .sidebar :is(.nav a, .sidebar-toggle, .sidebar-foot) {
+    animation-name: row-open;
+  }
+  .shell[data-moved] .main {
+    animation-name: page-after-close;
+  }
+  .shell[data-moved][data-sidebar='open'] .main {
+    animation-name: page-after-open;
+  }
+  .sidebar .nav-group + .nav-group::before,
+  .sidebar :is(.nav-text, .nav-label, .account-line) {
+    transition: opacity 0.18s var(--ease-out);
+  }
+
+  /* Closing: in step with the sidebar's edge, so the drop stays inside it. The
+     tail's curl hands over to the drop before either has moved, and the ring
+     waits for the word to go. */
+  .sidebar .brand-word {
+    transition: clip-path 0.3s var(--rail-ease);
+  }
+  .sidebar .brand-drop {
+    transition: opacity 0.06s linear;
+  }
+  .sidebar .ring-drop {
+    transition:
+      opacity 0.05s linear,
+      transform 0.32s var(--rail-ease),
+      fill 0.32s linear;
+  }
+  .sidebar .ring-round {
+    transition:
+      opacity 0.16s linear 0.22s,
+      transform 0.3s var(--ease-out) 0.16s;
+  }
+  /* Opening: the drop leads and the word follows it, on one curve. */
+  .shell[data-sidebar='open'] .sidebar .brand-word {
+    transition: clip-path 0.52s var(--rail-ease);
+  }
+  .shell[data-sidebar='open'] .sidebar .brand-drop {
+    transition: opacity 0.1s linear 0.44s;
+  }
+  .shell[data-sidebar='open'] .sidebar .ring-drop {
+    transition:
+      opacity 0.1s linear 0.46s,
+      transform 0.52s var(--rail-ease),
+      fill 0.52s linear;
+  }
+  .shell[data-sidebar='open'] .sidebar .ring-round {
+    transition:
+      opacity 0.24s var(--ease-out),
+      transform 0.4s var(--ease-out);
+  }
+}
+@keyframes rail-open {
+  from {
+    clip-path: inset(0 var(--rail-travel) 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+/* Held wide throughout, so it steps to the rail as the clip finishes closing. */
+@keyframes rail-close {
+  from,
+  to {
+    width: var(--rail-open);
+  }
+  from {
+    clip-path: inset(0);
+  }
+  to {
+    clip-path: inset(0 var(--rail-travel) 0 0);
+  }
+}
+@keyframes row-open {
+  from {
+    clip-path: inset(0 var(--rail-travel) 0 0 round var(--radius-sm));
+  }
+  to {
+    clip-path: inset(0 round var(--radius-sm));
+  }
+}
+@keyframes row-close {
+  from {
+    clip-path: inset(0 round var(--radius-sm));
+  }
+  to {
+    clip-path: inset(0 var(--rail-travel) 0 0 round var(--radius-sm));
+  }
+}
+@keyframes page-after-open {
+  from {
+    transform: translateX(calc(-1 * var(--rail-travel)));
+  }
+}
+@keyframes page-after-close {
+  from {
+    transform: translateX(var(--rail-travel));
   }
 }
 
@@ -2956,8 +3301,23 @@ button.list-item[aria-busy='true'] .working-bars {
     width: 44px;
     min-height: 44px;
   }
-  .nav a {
+  .nav a,
+  .sidebar-toggle {
     min-height: 48px;
+  }
+  /* Out to 44px around the circle, which stays the size it is. */
+  button.account-initial {
+    position: relative;
+  }
+  button.account-initial::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+  }
+  .nav-more {
+    height: 44px;
+    align-items: end;
+    padding-bottom: 2px;
   }
   .segmented button {
     padding: 10px 14px;
