@@ -611,7 +611,7 @@ export default function App() {
   const { user, ready, signedIn } = useAuth();
   const { capabilities, ready: benchReady } = useMachines();
   const { pathname } = useLocation();
-  usePageTitle(pathname);
+  usePageTitle(pathname, user != null);
 
   if (!ready || (user && !benchReady)) {
     return <Loading shell={signedIn} />;

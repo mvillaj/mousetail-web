@@ -18,14 +18,18 @@ const PAGES: [prefix: string, title: string][] = [
   ['/changelog', 'Changelog'],
 ];
 
-/** The document title for a path: "Shots | Mousetail", or the home title for "/". */
-export function pageTitle(pathname: string): string {
+/**
+ * The document title for a path: "Shots | Mousetail". "/" is the landing page
+ * when signed out (the home title) and the dashboard when signed in.
+ */
+export function pageTitle(pathname: string, signedIn = false): string {
+  if (pathname === '/') return signedIn ? `Dashboard | ${SITE}` : HOME_TITLE;
   const page = PAGES.find(([p]) => pathname === p || pathname.startsWith(`${p}/`));
   return page ? `${page[1]} | ${SITE}` : HOME_TITLE;
 }
 
-export function usePageTitle(pathname: string) {
+export function usePageTitle(pathname: string, signedIn: boolean) {
   useEffect(() => {
-    document.title = pageTitle(pathname);
-  }, [pathname]);
+    document.title = pageTitle(pathname, signedIn);
+  }, [pathname, signedIn]);
 }
