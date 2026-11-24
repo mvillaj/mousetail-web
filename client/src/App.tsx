@@ -44,6 +44,7 @@ import { useAuth } from './lib/auth';
 import { useMachines } from './lib/machines';
 import { useDelayPassed } from './lib/delay';
 import { sidebarStartsOpen, slideProgress, useSidebar } from './lib/sidebar';
+import { usePageTitle } from './lib/pageTitle';
 import { useScrollEdges } from './lib/useScrollEdges';
 import { useScrolling } from './lib/useScrolling';
 import AuthPage from './pages/Auth';
@@ -610,6 +611,7 @@ export default function App() {
   const { user, ready, signedIn } = useAuth();
   const { capabilities, ready: benchReady } = useMachines();
   const { pathname } = useLocation();
+  usePageTitle(pathname);
 
   if (!ready || (user && !benchReady)) {
     return <Loading shell={signedIn} />;
