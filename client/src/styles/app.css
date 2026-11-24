@@ -1450,6 +1450,24 @@ button.account-initial:is(:hover, [aria-expanded='true']) {
   padding: 14px 4px 0;
   margin-top: 16px;
 }
+.sheet-overlay[data-closing] {
+  animation: fade-out 0.18s ease-in both;
+  pointer-events: none;
+}
+.sheet-overlay[data-closing] .sheet {
+  animation: sheet-down 0.18s ease-in both;
+}
+@keyframes sheet-down {
+  to {
+    transform: translateY(40%);
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
 @keyframes sheet-up {
   from {
     transform: translateY(40%);
@@ -3489,13 +3507,15 @@ button.list-item[aria-busy='true'] .working-bars {
    Back and forward (data-navigation="pop", set by Shell) stay still, as native
    back does, and so does everything under reduced motion. While a transition
    runs React holds other updates, so data that lands mid-transition shows when
-   it ends: at most the 0.26s below. */
+   it ends: at most the 0.3s below. The new page starts as the old one ends,
+   so the two never show through each other: crossfaded, both were part
+   transparent at once and the old title ghosted over the new. */
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-navigation='pop'])::view-transition-old(.route-exit) {
-    animation: route-out 0.12s ease-in both;
+    animation: route-out 0.1s ease-in both;
   }
   :root:not([data-navigation='pop'])::view-transition-new(.route-enter) {
-    animation: route-in 0.26s var(--ease-out) both;
+    animation: route-in 0.22s var(--ease-out) 0.08s both;
   }
 }
 @keyframes route-out {
@@ -3511,6 +3531,18 @@ button.list-item[aria-busy='true'] .working-bars {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+/* On a phone the page is the whole screen, so its snapshot is large and the
+   slide is a texture moving at full size: fade alone, which stays smooth. */
+@media (max-width: 860px) {
+  @keyframes route-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 }
 @keyframes pour {

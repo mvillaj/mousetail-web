@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Link, MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App, { MoreSheet, navFor } from './App';
@@ -50,10 +50,10 @@ function renderSheet() {
 
 describe('MoreSheet', () => {
   // iOS Safari never sends mousedown for a tap on the backdrop, only click.
-  it('closes when the backdrop is clicked', () => {
+  it('closes when the backdrop is clicked', async () => {
     const { onClose, overlay } = renderSheet();
     fireEvent.click(overlay);
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
   it('stays open when the sheet itself is clicked', () => {
@@ -62,16 +62,24 @@ describe('MoreSheet', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('closes on Escape', () => {
+  it('closes on Escape', async () => {
     const { onClose } = renderSheet();
     fireEvent.keyDown(window, { key: 'Escape' });
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
-  it('closes from its Close button', () => {
+  it('closes from its Close button', async () => {
     const { onClose } = renderSheet();
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
+  it('plays out before closing, and leaves at the tap on a link', async () => {
+    const { onClose, overlay } = renderSheet();
+    fireEvent.click(screen.getByRole('link', { name: 'Grinders' }));
+    expect(overlay).toHaveAttribute('data-closing');
+    expect(onClose).not.toHaveBeenCalled();
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
   it('holds the page still while open and releases it on close', () => {
@@ -180,6 +188,23 @@ describe('page transitions', () => {
     // Signed out, there's no shell, and nothing left for the CSS to read.
     unmount();
     expect(navigation()).toBeUndefined();
+  });
+
+  it('starts a new page at the top, and leaves back and forward to the browser', async () => {
+    authUser = { displayName: 'Old', onboardedAt: '2026-10-01T00:00:00.000Z' };
+    const scrollTo = vi.fn();
+    window.scrollTo = scrollTo as unknown as typeof window.scrollTo;
+    renderApp();
+    scrollTo.mockClear();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Go' }));
+    await screen.findByRole('heading', { name: 'Getting started page' });
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+
+    scrollTo.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await screen.findByRole('heading', { name: 'Dashboard page' });
+    expect(scrollTo).not.toHaveBeenCalled();
   });
 });
 
