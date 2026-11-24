@@ -1,11 +1,14 @@
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SLIDE_OVER_MS, sidebarStartsOpen, slideProgress, useSidebar } from './sidebar';
 
 const touch = (coarse: boolean) =>
   vi.stubGlobal('matchMedia', (query: string) => ({
     matches: coarse && query === '(pointer: coarse)',
   }));
+
+// Most of these start from a rail, so a toggle opens it; the default is tested apart.
+beforeEach(() => localStorage.setItem('brewlab.sidebar', 'rail'));
 
 afterEach(() => {
   vi.useRealTimers();
@@ -15,21 +18,19 @@ afterEach(() => {
 });
 
 describe('useSidebar', () => {
-  it('starts as a rail, still, with nothing remembered', () => {
+  it('starts open, still, with nothing remembered', () => {
+    localStorage.clear();
     const { result } = renderHook(() => useSidebar());
-    expect(result.current).toMatchObject({ open: false, slide: null });
+    expect(result.current).toMatchObject({ open: true, slide: null });
   });
 
-  it('starts open by touch, where a rail has no tooltips, unless left as a rail', () => {
-    touch(true);
-    expect(sidebarStartsOpen()).toBe(true);
+  it('starts as it was left, whatever the pointer', () => {
+    localStorage.clear();
+    touch(false);
     const { result } = renderHook(() => useSidebar());
     act(() => result.current.toggle(null));
     expect(sidebarStartsOpen()).toBe(false);
-  });
-
-  it('starts as a rail for a mouse', () => {
-    touch(false);
+    touch(true);
     expect(sidebarStartsOpen()).toBe(false);
   });
 
@@ -78,9 +79,9 @@ describe('useSidebar', () => {
       throw new Error('denied');
     });
     const { result } = renderHook(() => useSidebar());
-    expect(result.current.open).toBe(false);
-    act(() => result.current.toggle(null));
     expect(result.current.open).toBe(true);
+    act(() => result.current.toggle(null));
+    expect(result.current.open).toBe(false);
   });
 });
 

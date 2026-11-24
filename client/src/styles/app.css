@@ -1081,11 +1081,14 @@ button.account-initial:is(:hover, [aria-expanded='true']) {
     opacity: 0;
     transform: rotate(80deg) scale(0.82);
   }
-  /* To the drop on the wordmark's tail. */
+  /* The ring's drop lets go in place; the wordmark's own drop then falls from
+     its tail, as on the sign-in page. */
   .shell[data-sidebar='open'] .sidebar .ring-drop {
-    fill: #d9622b;
     opacity: 0;
-    transform: translate(139.3px, 4.55px) scale(0.8);
+  }
+  .sidebar .brand-drop {
+    transform-box: fill-box;
+    transform-origin: 50% 0;
   }
 
   /* The loading frame, shaped like what lands in it: in the rail, a square
@@ -1148,8 +1151,8 @@ button.account-initial:is(:hover, [aria-expanded='true']) {
   }
 
   /* Closing: in step with the sidebar's edge, so the drop stays inside it. The
-     tail's curl hands over to the drop before either has moved, and the ring
-     waits for the word to go. */
+     wordmark's drop goes before either has moved, and the ring, with its own
+     drop, waits for the word to go. */
   .sidebar .brand-word {
     transition: clip-path 0.3s var(--rail-ease);
   }
@@ -1157,28 +1160,26 @@ button.account-initial:is(:hover, [aria-expanded='true']) {
     transition: opacity 0.06s linear;
   }
   .sidebar .ring-drop {
-    transition:
-      opacity 0.05s linear,
-      transform 0.32s var(--rail-ease),
-      fill 0.32s linear;
+    transition: opacity 0.16s linear 0.22s;
   }
   .sidebar .ring-round {
     transition:
       opacity 0.16s linear 0.22s,
       transform 0.3s var(--ease-out) 0.16s;
   }
-  /* Opening: the drop leads and the word follows it, on one curve. */
+  /* Opening: the word writes in, then the drop falls from its tail with the
+     sign-in page's overshoot. */
   .shell[data-sidebar='open'] .sidebar .brand-word {
     transition: clip-path 0.52s var(--rail-ease);
   }
   .shell[data-sidebar='open'] .sidebar .brand-drop {
-    transition: opacity 0.1s linear 0.44s;
+    transition: none;
+  }
+  .shell[data-moved][data-sidebar='open'] .sidebar .brand-drop {
+    animation: brand-drop 0.45s 0.4s cubic-bezier(0.3, 1.4, 0.5, 1) both;
   }
   .shell[data-sidebar='open'] .sidebar .ring-drop {
-    transition:
-      opacity 0.1s linear 0.46s,
-      transform 0.52s var(--rail-ease),
-      fill 0.52s linear;
+    transition: opacity 0.1s linear;
   }
   .shell[data-sidebar='open'] .sidebar .ring-round {
     transition:
