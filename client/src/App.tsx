@@ -1,5 +1,6 @@
 import {
   ViewTransition,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -368,6 +369,9 @@ function TabBar({ onMore }: { onMore: () => void }) {
 /** Destinations the tab bar already carries, so the sheet doesn't repeat them. */
 const IN_TAB_BAR = new Set(['/', '/shots', '/coffees']);
 
+/** How long the sheet takes to leave; keep with .sheet-overlay[data-closing]. */
+const SHEET_OUT_MS = 180;
+
 export function MoreSheet({
   groups,
   onClose,
@@ -380,15 +384,26 @@ export function MoreSheet({
     .map((g) => ({ ...g, links: g.links.filter((l) => !IN_TAB_BAR.has(l.to)) }))
     .filter((g) => g.links.length > 0);
   const [opened] = useState(location.key);
-  // Any navigation from inside the sheet closes it.
+  // Closing plays the sheet out before it unmounts. Without it the sheet hung
+  // over the next page for the whole page transition, then vanished in a frame.
+  const [closing, setClosing] = useState(false);
+  const close = useCallback(() => setClosing(true), []);
   useEffect(() => {
-    if (location.key !== opened) onClose();
-  }, [location.key, opened, onClose]);
+    if (!closing) return;
+    // Matches the exit in app.css; also covers reduced motion, which has none.
+    const t = window.setTimeout(onClose, SHEET_OUT_MS);
+    return () => window.clearTimeout(t);
+  }, [closing, onClose]);
+  // Any navigation from inside the sheet closes it: at the tap (below), so it
+  // leaves while the page changes, and here for any that didn't come from it.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    if (location.key !== opened) close();
+  }, [location.key, opened, close]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [close]);
   // Hold the page still underneath, so a drag on the sheet never scrolls it.
   useEffect(() => {
     const root = document.documentElement;
@@ -401,21 +416,30 @@ export function MoreSheet({
   // Close on click, not mousedown: iOS Safari doesn't fire mouse events for a
   // tap on a plain div, but React gives onClick targets the hook Safari needs.
   return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="sheet-overlay"
+      data-closing={closing || undefined}
+      onClick={(e) => e.target === e.currentTarget && close()}
+    >
       <div className="sheet" role="dialog" aria-modal="true" aria-label="More">
         <div className="sheet-head">
           <h2>More</h2>
           <button
             type="button"
             className="btn btn-ghost btn-icon"
-            onClick={onClose}
+            onClick={close}
             aria-label="Close"
             title="Close"
           >
             <X aria-hidden="true" />
           </button>
         </div>
-        <div className="sheet-body">
+        <div
+          className="sheet-body"
+          onClickCapture={(e) => {
+            if ((e.target as Element).closest('.nav a')) close();
+          }}
+        >
           <Nav groups={rest} />
           <Settings inline />
         </div>
@@ -459,6 +483,14 @@ function Shell({ children }: { children: React.ReactNode }) {
       delete root.dataset.navigation;
     };
   }, [navigationType, key]);
+
+  // A new page starts at the top. The document is what scrolls on a phone, so
+  // without this the next page opens part-way down, or jumps once it's shorter
+  // than the old offset. Back and forward are left to the browser. A layout
+  // effect, so it lands before the transition captures the new page.
+  useLayoutEffect(() => {
+    if (navigationType !== 'POP') window.scrollTo?.({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname, navigationType]);
 
   return (
     <div
