@@ -279,7 +279,7 @@
 }
 .landing .pull-glass .liquid-group {
   transform-box: fill-box;
-  transform-origin: bottom;
+  transform-origin: center;
 }
 .landing .pull-figures {
   display: flex;

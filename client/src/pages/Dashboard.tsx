@@ -16,7 +16,7 @@ import { useDelayPassed } from '../lib/delay';
 import { baristaLine } from '../lib/coach';
 import { Banner, Confidence, Empty, Modal, Stars } from '../components/ui';
 import ShotForm from '../components/ShotForm';
-import ShotGlass, { tasteLabel } from '../components/ShotGlass';
+import ShotGlass, { QualityLegend, tasteLabel } from '../components/ShotGlass';
 import { fmt, relativeDate } from '../lib/format';
 
 interface Stats {
@@ -153,7 +153,7 @@ export default function Dashboard() {
           <div className="dash-top">
             {loadingShots ? (
               <section className="coach is-empty" aria-busy="true">
-                <ShotGlass yieldG={0} width={92} className="coach-glass" />
+                <ShotGlass yieldG={0} width={108} className="coach-glass" saucer />
                 <p className="coach-reason">Loading your last shot…</p>
               </section>
             ) : latest && suggestion ? (
@@ -161,8 +161,9 @@ export default function Dashboard() {
                 <ShotGlass
                   yieldG={latest.yieldG}
                   taste={latest.tasteBalance}
-                  width={92}
+                  width={108}
                   className="coach-glass"
+                  saucer
                   label={`Last shot: ${fmt(latest.yieldG)} g out, ${tasteLabel(latest.tasteBalance).toLowerCase()}`}
                 />
                 <div>
@@ -202,12 +203,12 @@ export default function Dashboard() {
               </section>
             ) : shots.error ? (
               <section className="coach is-empty">
-                <ShotGlass yieldG={0} width={84} className="coach-glass" />
+                <ShotGlass yieldG={0} width={100} className="coach-glass" saucer />
                 <p className="coach-reason">The coach needs your shots, and they didn't load.</p>
               </section>
             ) : (
               <section className="coach is-empty" aria-label="What to change next">
-                <ShotGlass yieldG={0} width={92} className="coach-glass" />
+                <ShotGlass yieldG={0} width={108} className="coach-glass" saucer />
                 <div>
                   <h2 className="coach-headline">Pull your first shot</h2>
                   <p className="coach-reason">
@@ -262,19 +263,8 @@ export default function Dashboard() {
                     })}
                   </div>
                   <div className="dialin-legend" aria-hidden="true">
-                    <span>
-                      <i className="sour" />
-                      Sour
-                    </span>
-                    <span>
-                      <i className="balanced" />
-                      Balanced
-                    </span>
-                    <span>
-                      <i className="bitter" />
-                      Bitter
-                    </span>
-                    <span>Height is yield · green time is on target ({TARGET_S} ± 4 s)</span>
+                    <QualityLegend />
+                    <span>Green time is on target ({TARGET_S} ± 4 s)</span>
                   </div>
                 </>
               ) : shots.error ? (
