@@ -71,6 +71,18 @@ describe('ShotGlass', () => {
     expect(svg?.getAttribute('viewBox')).toBe('-8 -8 132 116');
   });
 
+  it('shadows the cup with an SVG filter only on a saucer', () => {
+    const plain = render(<ShotGlass yieldG={36} taste={0} />);
+    expect(plain.container.querySelector('filter')).toBeNull();
+    expect(plain.container.querySelector('.cup')?.getAttribute('filter')).toBeNull();
+    plain.unmount();
+
+    const { container } = render(<ShotGlass yieldG={36} taste={0} saucer />);
+    const filter = container.querySelector('filter');
+    expect(filter?.querySelector('feDropShadow')).not.toBeNull();
+    expect(container.querySelector('.cup')?.getAttribute('filter')).toBe(`url(#${filter?.id})`);
+  });
+
   it('names itself only when given a label', () => {
     const labelled = render(<ShotGlass yieldG={36} label="36 g" />);
     expect(labelled.getByRole('img', { name: '36 g' })).toBeTruthy();

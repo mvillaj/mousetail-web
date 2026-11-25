@@ -140,11 +140,23 @@ export default function ShotGlass({
           <stop stopColor={pour.crema} />
           <stop offset="1" stopColor={pour.crema} stopOpacity=".86" />
         </linearGradient>
+        {saucer ? (
+          // An SVG filter rather than CSS drop-shadow, which Safari ignores on SVG children.
+          <filter id={`${id}shadow`} x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow
+              dx="0"
+              dy="2.4"
+              stdDeviation="1.8"
+              floodColor="#140a04"
+              floodOpacity="0.28"
+            />
+          </filter>
+        ) : null}
       </defs>
 
       {saucer ? <circle className="saucer" cx="50" cy="50" r={50 + pad} /> : null}
 
-      <g className="cup">
+      <g className="cup" filter={saucer ? `url(#${id}shadow)` : undefined}>
         <path
           className="handle"
           d="M93 40 H99 C115 40 115 62 98 64 L93 64"

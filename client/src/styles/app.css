@@ -2835,12 +2835,10 @@ button.list-item[aria-busy='true'] .working-bars {
   overflow: visible;
 }
 /* The saucer takes the card's own ink, so the cup sits on whatever finish
-   the card wears; the shadow stays dark, since a light ink would glow. */
+   the card wears. Its shadow is an SVG filter in the component, kept dark,
+   since a light ink would glow. */
 .shot-glass .saucer {
   fill: var(--on-body-line);
-}
-.shot-glass.has-saucer .cup {
-  filter: drop-shadow(0 2px 3px rgba(20, 10, 4, 0.28));
 }
 
 /* ── Dashboard ─────────────────────────────────────────────────────────────── */
@@ -2867,7 +2865,7 @@ button.list-item[aria-busy='true'] .working-bars {
   gap: 8px 24px;
   align-items: center;
   position: relative;
-  /* Clip, not hidden: the swirl runs past the edges, and a hidden overflow
+  /* Clip, not hidden: the rosetta runs past the edges, and a hidden overflow
      can still be scrolled when focus or scrollIntoView reaches inside. */
   overflow: clip;
   /* Keeps the layers below behind the content but in front of the fill. */
