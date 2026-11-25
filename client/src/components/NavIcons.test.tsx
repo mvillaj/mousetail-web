@@ -1,6 +1,16 @@
 import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as NavIcons from './NavIcons';
+
+const motionPref = vi.hoisted(() => ({ reduce: false }));
+vi.mock('motion/react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('motion/react')>()),
+  useReducedMotion: () => motionPref.reduce,
+}));
+
+afterEach(() => {
+  motionPref.reduce = false;
+});
 
 const icons = Object.entries(NavIcons).filter(
   (e): e is [string, NavIcons.NavIcon] => typeof e[1] === 'function',
@@ -26,5 +36,11 @@ describe('NavIcons', () => {
     expect(svg()).toHaveAttribute('data-animating', 'true');
     rerender(<Icon animate={false} />);
     expect(svg()).not.toHaveAttribute('data-animating');
+  });
+
+  it.each(icons)('%s stays at rest for anyone who asked for reduced motion', (_, Icon) => {
+    motionPref.reduce = true;
+    const { container } = render(<Icon animate />);
+    expect(container.querySelector('svg')).not.toHaveAttribute('data-animating');
   });
 });

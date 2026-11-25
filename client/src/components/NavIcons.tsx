@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { Transition, Variants } from 'motion/react';
+import { useReducedMotion, type Transition, type Variants } from 'motion/react';
 import * as m from 'motion/react-m';
 
 /**
@@ -13,8 +13,10 @@ import * as m from 'motion/react-m';
  *
  * The link decides when: it passes `animate`, and the svg sets its children's
  * variant to 'hover' or 'rest'. Moves that are keyframes play once on the way
- * in; the rest return when the pointer leaves. MotionConfig's
- * reducedMotion="user" keeps them all still for anyone who asked for that.
+ * in; the rest return when the pointer leaves. Anyone who asked for reduced
+ * motion gets none: the icons stay at rest. MotionConfig's reducedMotion="user"
+ * alone isn't enough here, since it makes a turn snap to its end rather than
+ * not happen, and leaves fades running.
  */
 export interface NavIconProps {
   /** Play the hover move: the link is hovered or focused. */
@@ -24,6 +26,8 @@ export interface NavIconProps {
 export type NavIcon = (props: NavIconProps) => ReactNode;
 
 function Svg({ animate, className, children }: NavIconProps & { children: ReactNode }) {
+  const reduce = useReducedMotion();
+  const play = animate && !reduce;
   return (
     <m.svg
       xmlns="http://www.w3.org/2000/svg"
@@ -39,9 +43,9 @@ function Svg({ animate, className, children }: NavIconProps & { children: ReactN
       overflow="visible"
       className={className}
       aria-hidden="true"
-      data-animating={animate || undefined}
+      data-animating={play || undefined}
       initial={false}
-      animate={animate ? 'hover' : 'rest'}
+      animate={play ? 'hover' : 'rest'}
     >
       {children}
     </m.svg>
@@ -74,15 +78,24 @@ export const LayoutGrid: NavIcon = (p) => (
   </Svg>
 );
 
-// Shot log: the clock winds back.
+/**
+ * Shot log: the clock winds back a full turn. Not a wiggle: it ends at -360,
+ * which looks like rest but isn't 0, so a rest of 0 would unwind it all again
+ * on leave. Rest leaves rotate alone instead: the turn always finishes, and
+ * the next hover's keyframes start again from 0, which looks the same.
+ */
+const windBack: Variants = {
+  rest: {},
+  hover: { rotate: [0, -360], transition: { duration: 0.7, ease: 'easeInOut' } },
+};
 export const History: NavIcon = (p) => (
   <Svg {...p}>
-    <m.g variants={wiggle({ rotate: [0, -360] }, { duration: 0.7, ease: 'easeInOut' })}>
+    <m.g variants={windBack}>
       <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
       <path d="M3 3v5h5" />
     </m.g>
     <m.path
-      variants={wiggle({ rotate: [0, -360] }, { duration: 0.7, ease: 'easeInOut' })}
+      variants={windBack}
       style={{ originX: '12px', originY: '12px', transformBox: 'view-box' }}
       d="M12 7v5l4 2"
     />
@@ -204,14 +217,15 @@ export const Sprout: NavIcon = (p) => (
   </Svg>
 );
 
-// Changelog: the book opens wider.
+// Changelog: the book flexes, spine and covers together.
 export const BookOpen: NavIcon = (p) => (
   <Svg {...p}>
-    <path d="M12 5v16" />
-    <m.path
+    <m.g
       variants={wiggle({ scaleY: [1, 0.88, 1] }, { duration: 0.45, ease: 'easeInOut' })}
       style={{ originY: 1 }}
-      d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"
-    />
+    >
+      <path d="M12 5v16" />
+      <path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" />
+    </m.g>
   </Svg>
 );

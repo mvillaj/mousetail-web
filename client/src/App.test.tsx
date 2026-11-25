@@ -244,6 +244,27 @@ describe('the sidebar', () => {
     expect(playing()).toHaveLength(0);
   });
 
+  it('plays a link’s icon when tabbed to, but not when focused by a click', () => {
+    renderShell(null);
+    const link = within(aside()).getByRole('link', { name: 'Grinders' });
+    const icon = () => link.querySelector('.nav-icon');
+    const focusVisible = vi.spyOn(link, 'matches');
+
+    // A click focuses the link too; the move shouldn't replay on every one.
+    focusVisible.mockReturnValue(false);
+    fireEvent.focus(link);
+    expect(icon()).not.toHaveAttribute('data-animating');
+    fireEvent.blur(link);
+
+    focusVisible.mockReturnValue(true);
+    fireEvent.focus(link);
+    expect(focusVisible).toHaveBeenLastCalledWith(':focus-visible');
+    expect(icon()).toHaveAttribute('data-animating', 'true');
+
+    fireEvent.blur(link);
+    expect(icon()).not.toHaveAttribute('data-animating');
+  });
+
   it('is a rail when left as one: icons named in tooltips, the account behind its initial', () => {
     const { container } = renderShell();
     expect(container.querySelector('.shell')).toHaveAttribute('data-sidebar', 'rail');
