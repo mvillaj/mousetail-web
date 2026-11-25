@@ -8,10 +8,11 @@ test.use({ storageState: { cookies: [], origins: [] } });
 
 test('signing out returns to the landing page without reloading', async ({ page }) => {
   await setupClerkTestingToken({ page });
+  await page.addInitScript(() => localStorage.setItem('brewlab.sidebar', 'rail'));
   await page.goto('/');
   await clerk.signIn({ page, emailAddress: E2E_EMAIL });
   await page.goto('/shots');
-  // The sidebar starts as a rail, which keeps sign out behind the initial.
+  // As a rail, sign out is behind the initial.
   await page.getByRole('button', { name: 'Account', exact: true }).click();
   const signOut = page
     .getByRole('dialog', { name: 'Account' })

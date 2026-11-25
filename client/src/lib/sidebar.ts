@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react';
 
 const KEY = 'brewlab.sidebar';
 
-/** The slide's length, and then some: see `slide` below. */
-export const SLIDE_OVER_MS = 520;
+/** The slide's length and the drop's fall after it, and then some: see `slide` below. */
+export const SLIDE_OVER_MS = 900;
 
 /**
  * Whether the desktop sidebar starts open: as it was left on this device, and
- * until then a rail. Except by touch, where a rail's icons have no tooltips to
- * name them, so there it starts open.
+ * until then open, with its labels, rather than a rail of icons to learn.
  */
 export function sidebarStartsOpen(): boolean {
   try {
@@ -17,7 +16,7 @@ export function sidebarStartsOpen(): boolean {
   } catch {
     // Private mode: nothing is remembered.
   }
-  return window.matchMedia?.('(pointer: coarse)').matches ?? false;
+  return true;
 }
 
 interface Slide {

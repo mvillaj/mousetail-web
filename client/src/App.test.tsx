@@ -210,8 +210,10 @@ describe('page transitions', () => {
 
 describe('the sidebar', () => {
   afterEach(() => localStorage.clear());
-  const renderShell = () => {
+  /** `left` is how it was last left on this device; null is a first visit. */
+  const renderShell = (left: 'open' | 'rail' | null = 'rail') => {
     authUser = { displayName: 'Ada', onboardedAt: '2026-10-01T00:00:00.000Z' };
+    if (left) localStorage.setItem('brewlab.sidebar', left);
     return render(
       <MemoryRouter>
         <ThemeProvider>
@@ -222,7 +224,13 @@ describe('the sidebar', () => {
   };
   const aside = () => screen.getByRole('complementary');
 
-  it('is a rail until opened: icons named in tooltips, the account behind its initial', () => {
+  it('starts open on a first visit, with labels rather than tooltips', () => {
+    const { container } = renderShell(null);
+    expect(container.querySelector('.shell')).toHaveAttribute('data-sidebar', 'open');
+    expect(within(aside()).getByRole('link', { name: 'Grinders' })).not.toHaveAttribute('title');
+  });
+
+  it('is a rail when left as one: icons named in tooltips, the account behind its initial', () => {
     const { container } = renderShell();
     expect(container.querySelector('.shell')).toHaveAttribute('data-sidebar', 'rail');
     expect(within(aside()).getByRole('link', { name: 'Grinders' })).toHaveAttribute(

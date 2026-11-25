@@ -6,6 +6,12 @@ test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } });
 
 test.beforeEach(async ({ page }) => {
   await setupClerkTestingToken({ page });
+  // A first visit opens the menu; these start from the rail unless a test has left it
+  // open, or it's by touch, which is checked on a first visit.
+  await page.addInitScript(() => {
+    if (matchMedia('(pointer: coarse)').matches) return;
+    if (!localStorage.getItem('brewlab.sidebar')) localStorage.setItem('brewlab.sidebar', 'rail');
+  });
   await page.setViewportSize({ width: 1440, height: 900 });
 });
 
@@ -207,6 +213,14 @@ test('the ring becomes the wordmark, and back', async ({ page }) => {
   await expect(sidebar(page).locator('.brand-lockup')).toHaveText('mousetail');
 
   await expand(page).click();
+  // The drop falls from the tail, as on the sign-in page, rather than sliding in.
+  const falling = () =>
+    sidebar(page)
+      .locator('.brand-drop')
+      .evaluate((el) =>
+        el.getAnimations().some((a) => (a as CSSAnimation).animationName === 'brand-drop'),
+      );
+  await expect.poll(falling, { intervals: [10] }).toBe(true);
   // Written in, not switched: part-way there at some point on the way.
   const partial = () =>
     word.evaluate((el) => {
@@ -218,18 +232,9 @@ test('the ring becomes the wordmark, and back', async ({ page }) => {
   await expect(word).toHaveCSS('clip-path', 'inset(0px)');
   await expect(ink).toHaveCSS('opacity', '0');
 
-  // The travelling drop ends on the wordmark's own.
-  const centre = (s: string) =>
-    sidebar(page)
-      .locator(s)
-      .evaluate((el) => {
-        const r = el.getBoundingClientRect();
-        return r.right - r.width / 2;
-      });
-  const right = await sidebar(page)
-    .locator('.brand-drop')
-    .evaluate((el) => el.getBoundingClientRect().right);
-  expect(Math.abs((await centre('.ring-drop path')) - (right - 3))).toBeLessThan(2);
+  // The ring's drop lets go, and the wordmark's own is what's left.
+  await expect(sidebar(page).locator('.ring-drop')).toHaveCSS('opacity', '0');
+  await expect(sidebar(page).locator('.brand-drop')).toHaveCSS('opacity', '1');
 
   await collapse(page).click();
   await settled(page);
