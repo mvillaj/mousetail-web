@@ -230,6 +230,20 @@ describe('the sidebar', () => {
     expect(within(aside()).getByRole('link', { name: 'Grinders' })).not.toHaveAttribute('title');
   });
 
+  it('plays a link’s icon while the link is hovered, and only that one', () => {
+    renderShell(null);
+    const link = within(aside()).getByRole('link', { name: 'Grinders' });
+    const playing = () => aside().querySelectorAll('.nav-icon[data-animating]');
+    expect(playing()).toHaveLength(0);
+
+    fireEvent.pointerEnter(link);
+    expect(playing()).toHaveLength(1);
+    expect(link.querySelector('.nav-icon')).toHaveAttribute('data-animating', 'true');
+
+    fireEvent.pointerLeave(link);
+    expect(playing()).toHaveLength(0);
+  });
+
   it('is a rail when left as one: icons named in tooltips, the account behind its initial', () => {
     const { container } = renderShell();
     expect(container.querySelector('.shell')).toHaveAttribute('data-sidebar', 'rail');

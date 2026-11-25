@@ -14,6 +14,12 @@
         "value": "fraunces",
         "createdAt": "2026-11-05T17:17:51.651Z",
         "reason": "Claude: Fraunces is the established display face in DESIGN.md; fonts.css only self-hosts the existing choice, user asked to fix load flicker, not change type"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "var(--spring)",
+        "createdAt": "2026-11-25T01:01:46.142Z",
+        "reason": "Claude: --spring is cubic-bezier(0.22, 1, 0.36, 1) (app.css:87), an ease-out-quint with no overshoot; flagged by name only"
       }
     ]
   }
