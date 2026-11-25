@@ -18,13 +18,8 @@ import {
   useNavigationType,
 } from 'react-router-dom';
 import {
-  BookOpen,
   Bean,
   ChevronDown,
-  CloudCog,
-  Coffee as CoffeeIcon,
-  Compass,
-  Cog,
   History,
   LayoutGrid,
   LogOut,
@@ -32,12 +27,8 @@ import {
   Palette,
   PanelLeftClose,
   PanelLeftOpen,
-  Sprout,
   Plus,
-  UserRound,
-  Waves,
   X,
-  type LucideIcon,
 } from 'lucide-react';
 import { NO_MACHINE_CAPABILITIES, type MachineCapabilities } from '@brewlab/shared';
 import { useAuth } from './lib/auth';
@@ -65,12 +56,13 @@ import GettingStarted from './pages/GettingStarted';
 import BrandLockup from './components/BrandLockup';
 import BrandRing from './components/BrandRing';
 import RailLabel from './components/RailLabel';
+import * as NavIcons from './components/NavIcons';
 import { FinishPicker, ThemeToggle } from './components/Appearance';
 
 interface NavLinkDef {
   to: string;
   label: string;
-  icon: LucideIcon;
+  icon: NavIcons.NavIcon;
   end?: boolean;
   show: boolean;
 }
@@ -80,43 +72,78 @@ export function navFor(caps: MachineCapabilities) {
     {
       section: 'Brewing',
       links: [
-        { to: '/', label: 'Dashboard', icon: LayoutGrid, end: true, show: true },
-        { to: '/shots', label: 'Shot log', icon: History, show: true },
-        { to: '/profiles', label: 'Profiles', icon: Waves, show: caps.profiling !== 'none' },
+        { to: '/', label: 'Dashboard', icon: NavIcons.LayoutGrid, end: true, show: true },
+        { to: '/shots', label: 'Shot log', icon: NavIcons.History, show: true },
+        {
+          to: '/profiles',
+          label: 'Profiles',
+          icon: NavIcons.Waves,
+          show: caps.profiling !== 'none',
+        },
       ],
     },
     {
       section: 'Equipment',
       links: [
-        { to: '/machines', label: 'Machines', icon: CoffeeIcon, show: true },
-        { to: '/grinders', label: 'Grinders', icon: Cog, show: true },
+        { to: '/machines', label: 'Machines', icon: NavIcons.Coffee, show: true },
+        { to: '/grinders', label: 'Grinders', icon: NavIcons.Cog, show: true },
       ],
     },
     {
       section: 'Library',
       links: [
-        { to: '/coffees', label: 'My coffees', icon: Bean, show: true },
-        { to: '/explore', label: 'Explore', icon: Compass, show: true },
+        { to: '/coffees', label: 'My coffees', icon: NavIcons.Bean, show: true },
+        { to: '/explore', label: 'Explore', icon: NavIcons.Compass, show: true },
       ],
     },
     {
       section: 'Settings',
       links: [
-        { to: '/account', label: 'My account', icon: UserRound, show: true },
-        { to: '/fellow', label: 'Fellow account', icon: CloudCog, show: caps.cloud === 'fellow' },
+        { to: '/account', label: 'My account', icon: NavIcons.UserRound, show: true },
+        {
+          to: '/fellow',
+          label: 'Fellow account',
+          icon: NavIcons.CloudCog,
+          show: caps.cloud === 'fellow',
+        },
       ],
     },
     {
       section: 'About',
       links: [
-        { to: '/getting-started', label: 'Getting started', icon: Sprout, show: true },
-        { to: '/changelog', label: 'Changelog', icon: BookOpen, show: true },
+        { to: '/getting-started', label: 'Getting started', icon: NavIcons.Sprout, show: true },
+        { to: '/changelog', label: 'Changelog', icon: NavIcons.BookOpen, show: true },
       ],
     },
   ];
   return groups
     .map((g) => ({ ...g, links: g.links.filter((l) => l.show) }))
     .filter((g) => g.links.length > 0);
+}
+
+/**
+ * A sidebar link whose icon plays its move while the link is pointed at or
+ * tabbed to: the whole row is the target, not just the 19px icon.
+ */
+function NavItem({ link, rail }: { link: NavLinkDef; rail: boolean }) {
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  return (
+    <NavLink
+      to={link.to}
+      end={link.end}
+      title={rail ? link.label : undefined}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+      // Keyboard focus only: a click focuses the link too, and the move
+      // shouldn't play again on every click.
+      onFocus={(e) => setFocused(e.currentTarget.matches(':focus-visible'))}
+      onBlur={() => setFocused(false)}
+    >
+      <link.icon className="nav-icon" animate={hovered || focused} />
+      <span className="nav-text">{link.label}</span>
+    </NavLink>
+  );
 }
 
 /** How far in from an edge the sidebar's nav fades; .nav-frame in app.css. */
@@ -138,10 +165,7 @@ function Nav({
         <div className="nav-group" key={group.section}>
           <div className="nav-label">{group.section}</div>
           {group.links.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.end} title={rail ? l.label : undefined}>
-              <l.icon className="nav-icon" aria-hidden="true" />
-              <span className="nav-text">{l.label}</span>
-            </NavLink>
+            <NavItem key={l.to} link={l} rail={rail} />
           ))}
         </div>
       ))}
