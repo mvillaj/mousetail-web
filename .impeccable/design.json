@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-11T00:00:00Z",
+  "generatedAt": "2026-11-25T01:36:12Z",
   "title": "Design System: Mousetail",
   "extensions": {
     "colorMeta": {
@@ -440,112 +440,6 @@
           "oklch(95.0% 0.152 78.6)"
         ]
       },
-      "espresso-liquid": {
-        "role": "secondary",
-        "displayName": "Espresso Liquid",
-        "canonical": "#3a2215",
-        "tonalRamp": [
-          "oklch(15.0% 0.043 48.8)",
-          "oklch(25.0% 0.043 48.8)",
-          "oklch(35.0% 0.043 48.8)",
-          "oklch(45.0% 0.043 48.8)",
-          "oklch(55.0% 0.043 48.8)",
-          "oklch(65.0% 0.043 48.8)",
-          "oklch(80.0% 0.043 48.8)",
-          "oklch(95.0% 0.043 48.8)"
-        ]
-      },
-      "crema-sour": {
-        "role": "secondary",
-        "displayName": "Crema Sour",
-        "canonical": "#ecdba6",
-        "tonalRamp": [
-          "oklch(15.0% 0.071 92.4)",
-          "oklch(25.0% 0.071 92.4)",
-          "oklch(35.0% 0.071 92.4)",
-          "oklch(45.0% 0.071 92.4)",
-          "oklch(55.0% 0.071 92.4)",
-          "oklch(65.0% 0.071 92.4)",
-          "oklch(80.0% 0.071 92.4)",
-          "oklch(95.0% 0.071 92.4)"
-        ]
-      },
-      "crema-sourish": {
-        "role": "secondary",
-        "displayName": "Crema Sourish",
-        "canonical": "#ddb977",
-        "tonalRamp": [
-          "oklch(15.0% 0.094 81.9)",
-          "oklch(25.0% 0.094 81.9)",
-          "oklch(35.0% 0.094 81.9)",
-          "oklch(45.0% 0.094 81.9)",
-          "oklch(55.0% 0.094 81.9)",
-          "oklch(65.0% 0.094 81.9)",
-          "oklch(80.0% 0.094 81.9)",
-          "oklch(95.0% 0.094 81.9)"
-        ]
-      },
-      "crema-balanced": {
-        "role": "secondary",
-        "displayName": "Hazel Crema",
-        "canonical": "#c4874a",
-        "tonalRamp": [
-          "oklch(15.0% 0.108 64.1)",
-          "oklch(25.0% 0.108 64.1)",
-          "oklch(35.0% 0.108 64.1)",
-          "oklch(45.0% 0.108 64.1)",
-          "oklch(55.0% 0.108 64.1)",
-          "oklch(65.0% 0.108 64.1)",
-          "oklch(80.0% 0.108 64.1)",
-          "oklch(95.0% 0.108 64.1)"
-        ],
-        "purpose": "Balanced taste; also the brand mark crema."
-      },
-      "crema-bitterish": {
-        "role": "secondary",
-        "displayName": "Crema Bitterish",
-        "canonical": "#8f552d",
-        "tonalRamp": [
-          "oklch(15.0% 0.094 53.4)",
-          "oklch(25.0% 0.094 53.4)",
-          "oklch(35.0% 0.094 53.4)",
-          "oklch(45.0% 0.094 53.4)",
-          "oklch(55.0% 0.094 53.4)",
-          "oklch(65.0% 0.094 53.4)",
-          "oklch(80.0% 0.094 53.4)",
-          "oklch(95.0% 0.094 53.4)"
-        ]
-      },
-      "crema-bitter": {
-        "role": "secondary",
-        "displayName": "Crema Bitter",
-        "canonical": "#5a341d",
-        "tonalRamp": [
-          "oklch(15.0% 0.065 50.7)",
-          "oklch(25.0% 0.065 50.7)",
-          "oklch(35.0% 0.065 50.7)",
-          "oklch(45.0% 0.065 50.7)",
-          "oklch(55.0% 0.065 50.7)",
-          "oklch(65.0% 0.065 50.7)",
-          "oklch(80.0% 0.065 50.7)",
-          "oklch(95.0% 0.065 50.7)"
-        ]
-      },
-      "crema-unknown": {
-        "role": "secondary",
-        "displayName": "Crema Unknown",
-        "canonical": "#cdb9a2",
-        "tonalRamp": [
-          "oklch(15.0% 0.039 71.1)",
-          "oklch(25.0% 0.039 71.1)",
-          "oklch(35.0% 0.039 71.1)",
-          "oklch(45.0% 0.039 71.1)",
-          "oklch(55.0% 0.039 71.1)",
-          "oklch(65.0% 0.039 71.1)",
-          "oklch(80.0% 0.039 71.1)",
-          "oklch(95.0% 0.039 71.1)"
-        ]
-      },
       "stage-pre": {
         "role": "secondary",
         "displayName": "Stage Pre",
@@ -863,7 +757,7 @@
       {
         "name": "ease-out-expo (--ease-out)",
         "value": "cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Entrances: modal 0.28s, popover 0.22s, sheet 0.32s, scrim fade 0.18-0.2s, glass pour 0.9s."
+        "purpose": "Entrances: modal 0.28s, popover 0.22s, sheet 0.32s, scrim fade 0.18-0.2s, cup pour 0.9s."
       },
       {
         "name": "press",
@@ -872,8 +766,8 @@
       },
       {
         "name": "pour",
-        "value": "scaleY(0.15) to none, 0.9s ease-out-expo, origin bottom",
-        "purpose": "Coach glass fills once per new shot."
+        "value": "scale(0.15) to none, 0.9s ease-out-expo, origin centre",
+        "purpose": "Coach cup's coffee pours once per new shot, growing from the centre."
       },
       {
         "name": "pulling",
@@ -883,7 +777,7 @@
       {
         "name": "pull",
         "value": "140ms per machine second (35s shot in ~5s), linear rAF after a 650ms beat (150ms on replay)",
-        "purpose": "Landing hero: curve draws behind a playhead while the readout glass fills to 36 g; reduced motion paints the finished state."
+        "purpose": "Landing hero: curve draws behind a playhead while the readout cup’s coffee grows from the centre; reduced motion paints the finished state."
       },
       {
         "name": "state",
@@ -974,26 +868,26 @@
       "name": "Coach Card",
       "kind": "custom",
       "refersTo": "coach-card",
-      "description": "The one machine-coloured surface: last shot glass, one barista instruction, inverted primary.",
-      "html": "<section class=\"ds-coach\"><svg class=\"ds-glass\" viewBox=\"0 0 60 62\" width=\"56\" height=\"58\"><defs><clipPath id=\"dsg\"><path d=\"M9.5 8 H42.5 L40.2 52 Q39.9 57 35 57 H17 Q12.1 57 11.8 52 Z\"/></clipPath></defs><path class=\"h\" d=\"M43 18 C53 17 54.5 22 54.5 28.5 C54.5 36 50 40.5 41.4 40.5\"/><path class=\"b\" d=\"M8 6.5 H44 L41.7 52.2 Q41.3 58.5 35 58.5 H17 Q10.7 58.5 10.3 52.2 Z\"/><g clip-path=\"url(#dsg)\"><rect class=\"l\" x=\"0\" y=\"20.3\" width=\"60\" height=\"38.7\"/><rect x=\"0\" y=\"20.3\" width=\"60\" height=\"7.7\" fill=\"var(--crema-balanced, #c4874a)\"/><rect class=\"e\" x=\"0\" y=\"20.3\" width=\"60\" height=\"1.2\"/><ellipse class=\"f\" cx=\"18\" cy=\"23.8\" rx=\"4\" ry=\"1.7\"/><ellipse class=\"f\" cx=\"30\" cy=\"24.9\" rx=\"5.5\" ry=\"1.4\"/><ellipse class=\"f\" cx=\"39\" cy=\"23.4\" rx=\"3\" ry=\"1.5\"/></g><path class=\"r\" d=\"M8 6.5 H44 L41.7 52.2 Q41.3 58.5 35 58.5 H17 Q10.7 58.5 10.3 52.2 Z\"/><path class=\"s\" d=\"M14 13 L15.4 46\"/></svg><div><h2>Grind 2 steps finer</h2><p>It ran fast and tasted sour, so give the water more to push through.</p></div><div class=\"ds-coach-actions\"><button class=\"ds-coach-btn\">Log next shot</button><span>Fairly sure</span></div></section>",
-      "css": ".ds-glass .h,.ds-glass .r{fill:none;stroke:var(--glass-stroke, rgba(43,33,28,0.34));stroke-width:1.5}.ds-glass .b{fill:var(--glass-fill, rgba(255,255,255,0.55))}.ds-glass .l{fill:var(--espresso-liquid, #3a2215)}.ds-glass .e{fill:rgba(255,255,255,0.35)}.ds-glass .f{fill:rgba(255,255,255,0.28)}.ds-glass .s{stroke:rgba(255,255,255,0.5);stroke-width:1.5;stroke-linecap:round;fill:none} .ds-coach { background: var(--body, #ebdfc8); color: var(--on-body, #3a2616); border-radius: 24px; padding: 26px 26px 24px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 24px; align-items: center; max-width: 560px; font-family: var(--sans, 'Figtree', sans-serif); } .ds-coach h2 { margin: 0; font-family: var(--display, 'Fraunces', serif); font-weight: 600; font-size: 2.3rem; line-height: 1.04; letter-spacing: -0.035em; font-variation-settings: 'opsz' 72; } .ds-coach p { margin: 10px 0 0; font-size: 0.98rem; line-height: 1.5; color: color-mix(in oklab, var(--on-body, #3a2616) 74%, var(--body, #ebdfc8)); } .ds-coach-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-top: 18px; padding-top: 18px; border-top: 1px solid color-mix(in oklab, var(--on-body, #3a2616) 18%, var(--body, #ebdfc8)); } .ds-coach-actions span { margin-left: auto; font-size: 0.82rem; font-weight: 600; color: color-mix(in oklab, var(--on-body, #3a2616) 74%, var(--body, #ebdfc8)); } .ds-coach-btn { font-family: var(--sans, 'Figtree', sans-serif); font-size: 0.92rem; font-weight: 600; min-height: 40px; padding: 8px 18px; border-radius: 999px; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.15s, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1); min-height: 50px; padding: 12px 24px; font-size: 1rem; background: var(--on-body, #3a2616); color: var(--body, #ebdfc8); } .ds-coach-btn:hover { background: color-mix(in oklab, var(--on-body, #3a2616) 88%, var(--body, #ebdfc8)); } .ds-coach-btn:active { transform: scale(0.95) translateY(1px); transition-duration: 0.08s; }"
+      "description": "The one machine-coloured surface: the last shot’s cup on a saucer, one barista instruction, inverted primary, over a faint rosetta and grain.",
+      "html": "<section class=\"ds-coach\"><svg class=\"ds-cup\" viewBox=\"-8 -8 132 116\" width=\"108\" height=\"94.5\"><defs><linearGradient id=\"dsrim\" x1=\"0\" y1=\"0\" x2=\"0.8\" y2=\"1\"><stop stop-color=\"#ddcdb7\"/><stop offset=\".48\" stop-color=\"#f1e6d7\"/><stop offset=\"1\" stop-color=\"#d9c5ac\"/></linearGradient><radialGradient id=\"dscoffee\" cx=\".46\" cy=\".4\" r=\".68\"><stop stop-color=\"#c87e30\"/><stop offset=\".76\" stop-color=\"#b66d27\"/><stop offset=\"1\" stop-color=\"#924a15\"/></radialGradient><linearGradient id=\"dscrema\" x1=\"0\" y1=\"0\" x2=\".8\" y2=\"1\"><stop stop-color=\"#f5ac55\"/><stop offset=\"1\" stop-color=\"#f5ac55\" stop-opacity=\".86\"/></linearGradient><filter id=\"dsshadow\" x=\"-20%\" y=\"-20%\" width=\"140%\" height=\"140%\"><feDropShadow dx=\"0\" dy=\"2.4\" stdDeviation=\"1.8\" flood-color=\"#140a04\" flood-opacity=\"0.28\"/></filter></defs><circle class=\"ds-saucer\" cx=\"50\" cy=\"50\" r=\"58\"/><g filter=\"url(#dsshadow)\"><path d=\"M93 40 H99 C115 40 115 62 98 64 L93 64\" fill=\"none\" stroke=\"#dfcdb6\" stroke-width=\"8\" stroke-linecap=\"round\"/><circle cx=\"50\" cy=\"50\" r=\"48\" fill=\"url(#dsrim)\"/><circle cx=\"50\" cy=\"50\" r=\"41.5\" fill=\"url(#dscoffee)\"/><circle cx=\"50\" cy=\"50\" r=\"40\" fill=\"none\" stroke=\"#924a15\" stroke-width=\"1.5\" opacity=\".28\"/><path d=\"M42 19 C64 10 88 28 88 50 C88 75 65 90 44 86 C24 82 20 65 28 51 C37 38 52 43 55 51 C43 47 42 61 50 66 C65 75 81 54 75 39 C70 27 55 23 42 19Z\" fill=\"url(#dscrema)\"/><path d=\"M37 67 C41 81 62 84 78 66 C72 84 51 91 38 81 Q33 75 37 67Z\" fill=\"#ffca77\" opacity=\"0.32\"/></g></svg><div><h2>Grind 2 steps finer</h2><p>It ran fast and tasted sour, so give the water more to push through.</p></div><div class=\"ds-coach-actions\"><button class=\"ds-coach-btn\">Log next shot</button><span>Fairly sure</span></div></section>",
+      "css": ".ds-cup{display:block}.ds-cup .ds-saucer{fill:color-mix(in oklab, var(--on-body, #3a2616) 18%, var(--body, #ebdfc8))} .ds-coach { background: var(--body, #ebdfc8); color: var(--on-body, #3a2616); border-radius: 24px; padding: 26px 26px 24px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 24px; align-items: center; max-width: 560px; font-family: var(--sans, 'Figtree', sans-serif); } .ds-coach h2 { margin: 0; font-family: var(--display, 'Fraunces', serif); font-weight: 600; font-size: 2.3rem; line-height: 1.04; letter-spacing: -0.035em; font-variation-settings: 'opsz' 72; } .ds-coach p { margin: 10px 0 0; font-size: 0.98rem; line-height: 1.5; color: color-mix(in oklab, var(--on-body, #3a2616) 74%, var(--body, #ebdfc8)); } .ds-coach-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-top: 18px; padding-top: 18px; border-top: 1px solid color-mix(in oklab, var(--on-body, #3a2616) 18%, var(--body, #ebdfc8)); } .ds-coach-actions span { margin-left: auto; font-size: 0.82rem; font-weight: 600; color: color-mix(in oklab, var(--on-body, #3a2616) 74%, var(--body, #ebdfc8)); } .ds-coach-btn { font-family: var(--sans, 'Figtree', sans-serif); font-size: 0.92rem; font-weight: 600; min-height: 40px; padding: 8px 18px; border-radius: 999px; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.15s, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1); min-height: 50px; padding: 12px 24px; font-size: 1rem; background: var(--on-body, #3a2616); color: var(--body, #ebdfc8); } .ds-coach-btn:hover { background: color-mix(in oklab, var(--on-body, #3a2616) 88%, var(--body, #ebdfc8)); } .ds-coach-btn:active { transform: scale(0.95) translateY(1px); transition-duration: 0.08s; }"
     },
     {
-      "name": "Shot Glass",
+      "name": "Shot Cup",
       "kind": "custom",
-      "description": "Signature demitasse: liquid height is yield on a fixed 48 g scale, crema colour is taste; flecks when balanced.",
-      "html": "<div class=\"ds-glass-row\"><svg class=\"ds-glass\" viewBox=\"0 0 60 62\" width=\"56\" height=\"58\"><defs><clipPath id=\"dsg\"><path d=\"M9.5 8 H42.5 L40.2 52 Q39.9 57 35 57 H17 Q12.1 57 11.8 52 Z\"/></clipPath></defs><path class=\"h\" d=\"M43 18 C53 17 54.5 22 54.5 28.5 C54.5 36 50 40.5 41.4 40.5\"/><path class=\"b\" d=\"M8 6.5 H44 L41.7 52.2 Q41.3 58.5 35 58.5 H17 Q10.7 58.5 10.3 52.2 Z\"/><g clip-path=\"url(#dsg)\"><rect class=\"l\" x=\"0\" y=\"20.3\" width=\"60\" height=\"38.7\"/><rect x=\"0\" y=\"20.3\" width=\"60\" height=\"7.7\" fill=\"var(--crema-balanced, #c4874a)\"/><rect class=\"e\" x=\"0\" y=\"20.3\" width=\"60\" height=\"1.2\"/><ellipse class=\"f\" cx=\"18\" cy=\"23.8\" rx=\"4\" ry=\"1.7\"/><ellipse class=\"f\" cx=\"30\" cy=\"24.9\" rx=\"5.5\" ry=\"1.4\"/><ellipse class=\"f\" cx=\"39\" cy=\"23.4\" rx=\"3\" ry=\"1.5\"/></g><path class=\"r\" d=\"M8 6.5 H44 L41.7 52.2 Q41.3 58.5 35 58.5 H17 Q10.7 58.5 10.3 52.2 Z\"/><path class=\"s\" d=\"M14 13 L15.4 46\"/></svg></div>",
-      "css": ".ds-glass .h,.ds-glass .r{fill:none;stroke:var(--glass-stroke, rgba(43,33,28,0.34));stroke-width:1.5}.ds-glass .b{fill:var(--glass-fill, rgba(255,255,255,0.55))}.ds-glass .l{fill:var(--espresso-liquid, #3a2215)}.ds-glass .e{fill:rgba(255,255,255,0.35)}.ds-glass .f{fill:rgba(255,255,255,0.28)}.ds-glass .s{stroke:rgba(255,255,255,0.5);stroke-width:1.5;stroke-linecap:round;fill:none} .ds-glass-row { display: flex; gap: 12px; align-items: flex-end; }"
+      "description": "Signature cup seen from above: the taste picks excellent (balanced), fair (leaning sour or bitter) or bad (sour or bitter); untasted is a plain cup, no yield an empty one.",
+      "html": "<div class=\"ds-cup-row\"><svg class=\"ds-cup\" viewBox=\"0 0 116 100\" width=\"56\" height=\"48.3\"><defs><linearGradient id=\"dsrim\" x1=\"0\" y1=\"0\" x2=\"0.8\" y2=\"1\"><stop stop-color=\"#ddcdb7\"/><stop offset=\".48\" stop-color=\"#f1e6d7\"/><stop offset=\"1\" stop-color=\"#d9c5ac\"/></linearGradient><radialGradient id=\"dscoffee\" cx=\".46\" cy=\".4\" r=\".68\"><stop stop-color=\"#c87e30\"/><stop offset=\".76\" stop-color=\"#b66d27\"/><stop offset=\"1\" stop-color=\"#924a15\"/></radialGradient><linearGradient id=\"dscrema\" x1=\"0\" y1=\"0\" x2=\".8\" y2=\"1\"><stop stop-color=\"#f5ac55\"/><stop offset=\"1\" stop-color=\"#f5ac55\" stop-opacity=\".86\"/></linearGradient><filter id=\"dsshadow\" x=\"-20%\" y=\"-20%\" width=\"140%\" height=\"140%\"><feDropShadow dx=\"0\" dy=\"2.4\" stdDeviation=\"1.8\" flood-color=\"#140a04\" flood-opacity=\"0.28\"/></filter></defs><path d=\"M93 40 H99 C115 40 115 62 98 64 L93 64\" fill=\"none\" stroke=\"#dfcdb6\" stroke-width=\"8\" stroke-linecap=\"round\"/><circle cx=\"50\" cy=\"50\" r=\"48\" fill=\"url(#dsrim)\"/><circle cx=\"50\" cy=\"50\" r=\"41.5\" fill=\"url(#dscoffee)\"/><circle cx=\"50\" cy=\"50\" r=\"40\" fill=\"none\" stroke=\"#924a15\" stroke-width=\"1.5\" opacity=\".28\"/><path d=\"M42 19 C64 10 88 28 88 50 C88 75 65 90 44 86 C24 82 20 65 28 51 C37 38 52 43 55 51 C43 47 42 61 50 66 C65 75 81 54 75 39 C70 27 55 23 42 19Z\" fill=\"url(#dscrema)\"/><path d=\"M37 67 C41 81 62 84 78 66 C72 84 51 91 38 81 Q33 75 37 67Z\" fill=\"#ffca77\" opacity=\"0.32\"/></svg></div>",
+      "css": ".ds-cup{display:block} .ds-cup-row { display: flex; gap: 12px; align-items: center; }"
     }
   ],
   "narrative": {
     "northStar": "Matches Your Machine",
-    "overview": "Mousetail is a warm, friendly consumer app for the espresso bench: soft cards on a lightly wood-cast ground, plain barista language, and one bright colour that means \"press me\". That colour is the body of the owner's ES1. Pick a finish (Sesame, Cherry Red, Marine Blue, Woodland, Malted Chocolate, Black) and the action colour, the one filled surface, and a faint cast in the page ground all follow it. Everything else (ink, status hues, the shot glass) stays put.\n\nThe signature is the shot glass. Every shot is drawn as a demitasse on one fixed 48 g scale, so glasses compare honestly side by side, and the crema band's colour is how the shot tasted: pale for sour, hazel for balanced, dark for bitter. The glass recurs in the coach card, the dial-in strip, recent-shot rows, empty states and the brand mark.\n\nDensity is calm and generous: 20px card radii, pill buttons, 15px body, one instruction per screen set large in Fraunces. Light and dark are both first-class; light is the base. A first visit with no saved choice opens in light, on the landing and in the app alike; \"Auto\" follows the OS only once someone picks it. This world replaces the retired brown-on-brown \"Bench Logbook\". Colourway names describe the machine only; Mousetail carries no Fellow marks or UI.",
+    "overview": "Mousetail is a warm, friendly consumer app for the espresso bench: soft cards on a lightly wood-cast ground, plain barista language, and one bright colour that means \"press me\". That colour is the body of the owner's ES1. Pick a finish (Sesame, Cherry Red, Marine Blue, Woodland, Malted Chocolate, Black) and the action colour, the one filled surface, and a faint cast in the page ground all follow it. Everything else (ink, status hues, the shot cup) stays put.\n\nThe signature is the shot cup. Every shot is drawn as a cup seen from above, and the coffee and its crema say how it tasted in three steps: a rich, fully swirled crema for balanced, a thinner one for leaning sour or bitter, and a dark cup with a sliver of crema for sour or bitter. The cup recurs in the coach card, the dial-in strip, recent-shot rows and empty states.\n\nDensity is calm and generous: 20px card radii, pill buttons, 15px body, one instruction per screen set large in Fraunces. Light and dark are both first-class; light is the base. A first visit with no saved choice opens in light, on the landing and in the app alike; \"Auto\" follows the OS only once someone picks it. This world replaces the retired brown-on-brown \"Bench Logbook\". Colourway names describe the machine only; Mousetail carries no Fellow marks or UI.",
     "keyCharacteristics": [
       "The selected finish's body colour is the action colour and fills exactly one surface (the coach card).",
       "The ground takes a faint cast of the machine; cards sit on it with soft offset shadows (light) or a hairline border (dark).",
       "Fraunces headings, Figtree UI, Red Hat Mono for figures only.",
-      "Every shot is a demitasse: height is yield on a fixed scale, crema colour is taste.",
+      "Every shot is a cup seen from above: its coffee and crema are how it tasted.",
       "Tamp-feel press on every button: a small give and settle, never a bounce.",
       "Drawn Lucide line icons throughout."
     ],
@@ -1056,7 +950,7 @@
     "dos": [
       "Do derive every action tint from `--action` with `color-mix(in oklab, ...)`; a new finish adds only `--body`, `--on-body`, `--action`, `--on-action` per theme.",
       "Do keep the coach card the only `--body`-filled surface, and invert its primary button to on-body / body.",
-      "Do draw every shot as the shared Shot Glass on the fixed 48 g scale, with crema colour from the taste.",
+      "Do draw every shot as the shared Shot Cup, its quality step from the taste.",
       "Do set figures in Red Hat Mono with tabular numerals and their units and words in Figtree.",
       "Do give every button the tamp-feel press (`scale(0.95) translateY(1px)`, ease-out-quint) and remove it under reduced motion.",
       "Do keep one primary press per viewport: hide the header Log button when the coach shows, and let the tab bar carry Log shot on phones.",

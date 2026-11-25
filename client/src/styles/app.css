@@ -44,18 +44,6 @@
   --shadow-bar: 0 -8px 24px -18px rgba(40, 28, 20, 0.3);
   --shadow-chip: 0 1px 3px rgba(40, 28, 20, 0.12);
 
-  /* The shot glass. The liquid is drawn, not themed, so only the glass itself
-     and the empty space inside it change between light and dark. */
-  --espresso-liquid: #3a2215;
-  --crema-sour: #ecdba6;
-  --crema-sourish: #ddb977;
-  --crema-balanced: #c4874a;
-  --crema-bitterish: #8f552d;
-  --crema-bitter: #5a341d;
-  --crema-unknown: #cdb9a2;
-  --glass-stroke: rgba(43, 33, 28, 0.34);
-  --glass-fill: rgba(255, 255, 255, 0.55);
-
   /* Profile-chart stages: fixed brew colours, independent of the finish. */
   --stage-pre: #5b8fc0;
   --stage-infusion: #c4874a;
@@ -123,12 +111,6 @@
   --scrim: rgba(8, 6, 5, 0.66);
   --shadow-bar: 0 -8px 24px -18px rgba(0, 0, 0, 0.6);
   --shadow-chip: none;
-
-  --glass-stroke: rgba(246, 239, 232, 0.36);
-  --glass-fill: rgba(255, 255, 255, 0.04);
-  /* The bitter end lifts in dark so it stays apart from the liquid and the card. */
-  --crema-bitterish: #a8693c;
-  --crema-bitter: #84512e;
 
   --stage-pre: #7eaad6;
   --stage-infusion: #d49a5c;
@@ -2846,50 +2828,17 @@ button.list-item[aria-busy='true'] .working-bars {
   margin-left: auto;
 }
 
-/* ── The shot glass (signature) ─────────────────────────────────────────────
-   Liquid height is yield on one fixed scale everywhere, so glasses compare
-   honestly; the crema band's colour is the taste. */
+/* ── The shot cup (signature) ───────────────────────────────────────────────
+   Seen from above; the coffee and its crema show how the shot tasted. */
 .shot-glass {
   display: block;
   overflow: visible;
 }
-.shot-glass .glass-back {
-  fill: var(--glass-fill);
-}
-.shot-glass .glass-rim {
-  fill: none;
-  stroke: var(--glass-stroke);
-  stroke-width: 1.5;
-}
-.shot-glass .liquid {
-  fill: var(--espresso-liquid);
-}
-.shot-glass .handle {
-  fill: none;
-  stroke: var(--glass-stroke);
-  stroke-width: 1.5;
-}
-.shot-glass .fleck {
-  fill: rgba(255, 255, 255, 0.28);
-}
-.shot-glass .crema-edge {
-  fill: rgba(255, 255, 255, 0.35);
-}
-.shot-glass .over {
-  fill: none;
-  stroke: var(--text-faint);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.shot-glass .shine {
-  stroke: rgba(255, 255, 255, 0.5);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  fill: none;
-}
-:root[data-theme='dark'] .shot-glass .shine {
-  stroke: rgba(255, 255, 255, 0.14);
+/* The saucer takes the card's own ink, so the cup sits on whatever finish
+   the card wears. Its shadow is an SVG filter in the component, kept dark,
+   since a light ink would glow. */
+.shot-glass .saucer {
+  fill: var(--on-body-line);
 }
 
 /* ── Dashboard ─────────────────────────────────────────────────────────────── */
@@ -2916,11 +2865,43 @@ button.list-item[aria-busy='true'] .working-bars {
   gap: 8px 24px;
   align-items: center;
   position: relative;
-  overflow: hidden;
+  /* Clip, not hidden: the rosetta runs past the edges, and a hidden overflow
+     can still be scrolled when focus or scrollIntoView reaches inside. */
+  overflow: clip;
+  /* Keeps the layers below behind the content but in front of the fill. */
+  isolation: isolate;
 }
+/* The card's texture: a rosetta, the latte art a well-pulled shot earns,
+   large and cropped off the corner. It's the milk from a photo of a real pour,
+   used as a mask and filled with the card's own ink so it follows every
+   finish, over a fine grain like the machine's powder-coated body. */
+.coach::before,
+.coach::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+.coach::before {
+  height: 150%;
+  aspect-ratio: 640 / 626;
+  right: -26%;
+  bottom: -52%;
+  background: var(--on-body);
+  opacity: 0.2;
+  transform: rotate(-14deg);
+  mask: url('../assets/latte/rosetta-mask.webp') center / contain no-repeat;
+}
+.coach::after {
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px;
+  mix-blend-mode: soft-light;
+  opacity: 0.22;
+}
+/* Centred on the text beside it: the headline, reason and readings. */
 .coach-glass {
-  grid-row: span 2;
-  align-self: end;
+  align-self: center;
 }
 .coach-headline {
   margin: 0;
@@ -3080,23 +3061,10 @@ button.list-item[aria-busy='true'] .working-bars {
   font-size: 0.8rem;
   color: var(--text-faint);
 }
-.dialin-legend i {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  margin-right: 6px;
-  vertical-align: -1px;
-  box-shadow: 0 0 0 1px var(--border-strong);
-}
-.dialin-legend i.sour {
-  background: var(--crema-sour);
-}
-.dialin-legend i.balanced {
-  background: var(--crema-balanced);
-}
-.dialin-legend i.bitter {
-  background: var(--crema-bitter);
+.dialin-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* A slow first load: the coach and dial-in placeholders take roughly the
@@ -3203,6 +3171,12 @@ button.list-item[aria-busy='true'] .working-bars {
     padding: 20px 18px 18px;
     border-radius: 20px;
     grid-template-columns: minmax(0, 1fr);
+  }
+  /* A narrow card would put the rosetta behind the text; keep it in the corner. */
+  .coach::before {
+    height: 105%;
+    right: -16%;
+    bottom: -38%;
   }
   .coach-glass {
     position: absolute;
@@ -3481,7 +3455,7 @@ button.list-item[aria-busy='true'] .working-bars {
    authored moment. */
 .coach-glass .liquid-group {
   transform-box: fill-box;
-  transform-origin: bottom;
+  transform-origin: center;
   animation: pour 0.9s var(--ease-out) both;
 }
 /* ── View transitions: app-wide baseline ─────────────────────────────────────
@@ -3548,7 +3522,7 @@ button.list-item[aria-busy='true'] .working-bars {
 }
 @keyframes pour {
   from {
-    transform: scaleY(0.15);
+    transform: scale(0.15);
   }
   to {
     transform: none;

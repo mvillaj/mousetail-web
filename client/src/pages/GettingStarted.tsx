@@ -155,7 +155,8 @@ function Basics({ onBack, onNext }: { onBack: () => void; onNext: () => void }) 
         <p>Everything else is detail. The app's coach works from exactly these.</p>
       </div>
       <div className="basics-hero card">
-        <ShotGlass yieldG={STARTER.yieldG} taste={0} width={72} label={`${STARTER.yieldG} g`} />
+        {/* Decorative: the recipe beside it gives the grams the cup can't show. */}
+        <ShotGlass yieldG={STARTER.yieldG} taste={0} width={72} />
         <div>
           <div className="basics-recipe mono">
             {STARTER.doseG} g → {STARTER.yieldG} g · {STARTER.timeS} s

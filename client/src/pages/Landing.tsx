@@ -10,7 +10,7 @@ import {
   type StageKind,
 } from '@brewlab/shared';
 import BrandLockup from '../components/BrandLockup';
-import ShotGlass, { tasteLabel } from '../components/ShotGlass';
+import ShotGlass, { QualityLegend, tasteLabel } from '../components/ShotGlass';
 import { ProfileCurve, STAGE_COLOUR } from '../components/charts';
 import { baristaLine } from '../lib/coach';
 import { Confidence } from '../components/ui';
@@ -165,7 +165,7 @@ function HeroPull() {
         const half = Math.ceil(readout.current.offsetWidth / 2) + 8;
         readout.current.style.left = `clamp(${half}px, ${pct}, calc(100% - ${half}px))`;
       }
-      if (liquid) liquid.style.transform = `scaleY(${POUR(t).toFixed(4)})`;
+      if (liquid) liquid.style.transform = `scale(${POUR(t).toFixed(4)})`;
       if (barText.current) barText.current.textContent = bar.toFixed(1);
       if (timeText.current) timeText.current.textContent = t.toFixed(1);
       if (flowText.current) flowText.current.textContent = stage.flowLimitMlS.toFixed(1);
@@ -502,19 +502,8 @@ function DialInDemo() {
         })}
       </div>
       <div className="dialin-legend" aria-hidden="true">
-        <span>
-          <i className="sour" />
-          Sour
-        </span>
-        <span>
-          <i className="balanced" />
-          Balanced
-        </span>
-        <span>
-          <i className="bitter" />
-          Bitter
-        </span>
-        <span>Height is yield · green time is on target</span>
+        <QualityLegend />
+        <span>Green time is on target</span>
       </div>
     </section>
   );
@@ -593,8 +582,9 @@ function CoachDemo() {
         <ShotGlass
           yieldG={SAMPLE_YIELD}
           taste={taste}
-          width={92}
+          width={108}
           className="coach-glass"
+          saucer
           label={`Sample shot: ${SAMPLE_YIELD} g out, ${tasteLabel(taste).toLowerCase()}`}
         />
         <div aria-live="polite">
@@ -788,9 +778,8 @@ export default function Landing() {
           <div className="stage-body">
             <h2>Every shot, logged with the setting that made it.</h2>
             <p className="lead">
-              Each shot is a glass on one scale: height is yield, the crema is how it tasted. Grind
-              is stored in microns too, so grinders that disagree about what “15” means share one
-              axis.
+              Each shot is a cup, and its crema shows how it tasted. Grind is stored in microns too,
+              so grinders that disagree about what “15” means share one axis.
             </p>
             <div className="solo-demo">
               <DialInDemo />
